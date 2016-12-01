@@ -3,6 +3,7 @@ package adventofcode
 import (
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -12,6 +13,7 @@ type Map struct {
 	y int
 
 	direction rune
+	visited   map[string]bool // Part 2
 }
 
 func (m *Map) String() string {
@@ -24,6 +26,19 @@ func NewMap() *Map {
 		x:         0,
 		y:         0,
 		direction: 'N',
+		visited:   make(map[string]bool),
+	}
+
+}
+
+func (m *Map) Visit(x int, y int) {
+	point := fmt.Sprintf("%v:%v", x, y)
+	if m.visited[point] {
+		dist := math.Abs(float64(x)) + math.Abs(float64(y))
+		fmt.Printf("First Point visited twice is [%v, %v], distance: %v\n", x, y, dist)
+		os.Exit(1)
+	} else {
+		m.visited[point] = true
 	}
 
 }
@@ -53,7 +68,8 @@ func (m *Map) ProcessStep(step string) {
 	}
 	dist, _ := strconv.ParseInt(strings.TrimSpace(step[1:]), 10, 64)
 	fmt.Printf(" %v\n", dist)
-	m.Move(int(dist))
+	//m.Move(int(dist))
+	m.MoveAndTag(int(dist)) // Part 2
 }
 
 func (m *Map) Move(distance int) {
@@ -68,6 +84,32 @@ func (m *Map) Move(distance int) {
 	case 'W':
 		m.y -= distance
 	}
+}
+
+func (m *Map) MoveAndTag(distance int) {
+	switch m.direction {
+	case 'N':
+		for i := 1; i < distance; i++ {
+			m.Visit(m.x+i, m.y)
+		}
+		m.x += distance
+	case 'E':
+		for i := 1; i < distance; i++ {
+			m.Visit(m.x, m.y+i)
+		}
+		m.y += distance
+	case 'S':
+		for i := 1; i < distance; i++ {
+			m.Visit(m.x-i, m.y)
+		}
+		m.x -= distance
+	case 'W':
+		for i := 1; i < distance; i++ {
+			m.Visit(m.x, m.y-i)
+		}
+		m.y -= distance
+	}
+	m.Visit(m.x, m.y)
 }
 
 func (m *Map) RotateRight() {
