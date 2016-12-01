@@ -2,9 +2,9 @@ package adventofcode
 
 import (
 	"fmt"
-	"strings"
-	"strconv"
 	"math"
+	"strconv"
+	"strings"
 )
 
 type Map struct {
@@ -21,8 +21,8 @@ func (m *Map) String() string {
 
 func NewMap() *Map {
 	return &Map{
-		x: 0,
-		y: 0,
+		x:         0,
+		y:         0,
 		direction: 'N',
 	}
 
@@ -43,8 +43,7 @@ func Day01() {
 	fmt.Printf("Map: %v\n", m)
 }
 
-
-func (m *Map)ProcessStep(step string) {
+func (m *Map) ProcessStep(step string) {
 	if step[0] == 'L' {
 		fmt.Printf("Left")
 		m.RotateLeft()
@@ -57,42 +56,42 @@ func (m *Map)ProcessStep(step string) {
 	m.Move(int(dist))
 }
 
-func (m *Map)Move(distance int) {
+func (m *Map) Move(distance int) {
 	fmt.Printf("Moving %v by %v\n", string(m.direction), distance)
 	switch m.direction {
-	case 'N' :
+	case 'N':
 		m.x += distance
-	case 'E' :
+	case 'E':
 		m.y += distance
-	case 'S' :
+	case 'S':
 		m.x -= distance
-	case 'W' :
+	case 'W':
 		m.y -= distance
 	}
 }
 
-func (m *Map)RotateRight() {
+func (m *Map) RotateRight() {
 	switch m.direction {
-	case 'N' :
+	case 'N':
 		m.direction = 'E'
-	case 'E' :
+	case 'E':
 		m.direction = 'S'
-	case 'S' :
+	case 'S':
 		m.direction = 'W'
-	case 'W' :
+	case 'W':
 		m.direction = 'N'
 	}
 }
 
-func (m *Map)RotateLeft() {
+func (m *Map) RotateLeft() {
 	switch m.direction {
-	case 'N' :
+	case 'N':
 		m.direction = 'W'
-	case 'E' :
+	case 'E':
 		m.direction = 'N'
-	case 'S' :
+	case 'S':
 		m.direction = 'E'
-	case 'W' :
+	case 'W':
 		m.direction = 'S'
 	}
 }
