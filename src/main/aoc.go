@@ -9,7 +9,8 @@ func main() {
 	fmt.Println("AdventOfCode2016 Runner")
 
 	//adventofcode.Day01()
-	adventofcode.Day02()
+	//adventofcode.Day02()
+	adventofcode.Day03()
 
 	fmt.Println("\nComplete")
 }
