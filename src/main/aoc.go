@@ -10,7 +10,8 @@ func main() {
 
 	//adventofcode.Day01()
 	//adventofcode.Day02()
-	adventofcode.Day03()
+	//adventofcode.Day03()
+	adventofcode.Day04()
 
 	fmt.Println("\nComplete")
 }
