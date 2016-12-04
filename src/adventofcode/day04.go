@@ -2,7 +2,6 @@ package adventofcode
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -60,10 +59,6 @@ func (r *Room04) RankByLetterCount() {
 
 func (r *Room04) CalculateChecksum() {
 	var letters string
-	if len(r.RankedPairs) < 5 {
-		fmt.Printf("WTF: %v", r.RankedPairs)
-		os.Exit(1)
-	}
 	for i := 0; i < 5; i++ {
 		letters += r.RankedPairs[i].Key
 	}
@@ -111,23 +106,23 @@ func Day04() {
 	rooms := []*Room04{}
 	total := 0
 	for _, line := range input {
-		fmt.Printf("Line: %v\n", line)
+		//fmt.Printf("Line: %v\n", line)
 		room := NewRoom04(line)
 		room.Calculate()
 		room.RankByLetterCount()
 		room.CalculateChecksum()
-		fmt.Println(room.Checksum)
+		//fmt.Println(room.Checksum)
 		if room.Checksum == room.CalculatedChecksum {
 			total += room.SectorId
+
+			// Part 2
+			room.Decrypt()
+			fmt.Printf("%v\t%v\n", room.SectorId, room.DecryptedWords)
+			// Grep the output for 'northpole object storage'
 		}
-		room.Decrypt() //Part 2
+
 		rooms = append(rooms, room)
-
 		//fmt.Println(room)
-		// Part 2
-		fmt.Printf("%v\t%v\n", room.SectorId, room.DecryptedWords)
-		// Grep the output for 'northpole object storage'
-
 	}
 	fmt.Printf("Total: %v\n", total) // Part 1
 	//fmt.Printf("%v\n",input)
