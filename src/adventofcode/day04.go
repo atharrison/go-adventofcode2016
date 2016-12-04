@@ -15,6 +15,7 @@ type Room04 struct {
 	CalculatedChecksum string
 	Counts             map[string]int
 	RankedPairs        PairList
+	DecryptedWords     []string // Part 2
 }
 
 func NewRoom04(line string) *Room04 {
@@ -86,6 +87,22 @@ func (p PairList) Less(i, j int) bool {
 }
 func (p PairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
+//Part 2
+func (r *Room04) Decrypt() {
+	r.DecryptedWords = make([]string, len(r.Letters))
+	for w, word := range r.Letters {
+		var newWord string
+		for i := 0; i < len(word); i++ {
+			newLetter := (int(word[i]) + (r.SectorId % 26))
+			if newLetter > int('z') {
+				newLetter = newLetter - 26
+			}
+			newWord += string(rune(newLetter))
+		}
+		r.DecryptedWords[w] = newWord
+	}
+}
+
 func Day04() {
 	day := "04"
 	filename := fmt.Sprintf("data/day%vinput.txt", day)
@@ -103,11 +120,15 @@ func Day04() {
 		if room.Checksum == room.CalculatedChecksum {
 			total += room.SectorId
 		}
+		room.Decrypt() //Part 2
 		rooms = append(rooms, room)
 
-		fmt.Println(room)
+		//fmt.Println(room)
+		// Part 2
+		fmt.Printf("%v\t%v\n", room.SectorId, room.DecryptedWords)
+		// Grep the output for 'northpole object storage'
 
 	}
-	fmt.Printf("Total: %v\n", total)
+	fmt.Printf("Total: %v\n", total) // Part 1
 	//fmt.Printf("%v\n",input)
 }
