@@ -23,11 +23,21 @@ func isIpV7TLS(line string) int {
 	segment := ""
 	hasabba := false
 	hasABBAInside := false
+
+	//Part 2
+	var outsideABA []string
+	var insideABA []string
+
 	for i := 0; i < len(line); i++ {
 		segment += string(line[i])
 		if !inside {
 			if line[i] == '[' {
 				hasabba = hasabba || hasABBA(segment)
+				newResults := findABA(segment)
+				for _, r := range newResults {
+					outsideABA = append(outsideABA, r)
+				}
+
 				inside = true
 				segment = ""
 			}
@@ -36,25 +46,55 @@ func isIpV7TLS(line string) int {
 			if line[i] == ']' {
 				inside = false
 				hasABBAInside = hasABBAInside || hasABBA(segment)
+				newResults := findABA(segment)
+				for _, r := range newResults {
+					insideABA = append(insideABA, r)
+				}
+
 				segment = ""
 			}
 		}
 	}
 	if !inside {
 		hasabba = hasabba || hasABBA(segment)
-		//inside = true
-		//segment = ""
-
+		newResults := findABA(segment)
+		for _, r := range newResults {
+			outsideABA = append(outsideABA, r)
+		}
 	} else {
-		//inside = false
 		hasABBAInside = hasABBAInside || hasABBA(segment)
-		//segment = ""
+		newResults := findABA(segment)
+		for _, r := range newResults {
+			insideABA = append(insideABA, r)
+		}
 	}
-	if hasabba && !hasABBAInside {
-		fmt.Printf("TLS: %v\n", line)
+
+	// Part 1
+	//if hasabba && !hasABBAInside {
+	//	fmt.Printf("TLS: %v\n", line)
+	//	return 1
+	//}
+	//return 0
+
+	// Part 2
+	if hasSSL(outsideABA, insideABA) {
 		return 1
 	}
 	return 0
+
+}
+
+func hasSSL(outside []string, inside []string) bool {
+	fmt.Printf("Checking SSL %v against %v\n", outside, inside)
+	for _, item := range outside {
+		toCheck := string(item[1]) + string(item[0]) + string(item[1])
+		for _, insideItem := range inside {
+			if toCheck == insideItem {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func hasABBA(segment string) bool {
@@ -67,4 +107,18 @@ func hasABBA(segment string) bool {
 
 	}
 	return false
+}
+
+func findABA(segment string) []string {
+	var results []string
+
+	fmt.Printf("Checking %v\n", segment)
+	for i := 0; i < len(segment)-2; i++ {
+		if segment[i] == segment[i+2] && segment[i] != segment[i+1] && segment[i+2] != '[' && segment[i+2] != ']' {
+			fmt.Printf("ABA: %v\n", segment)
+			results = append(results, segment[i:i+3])
+		}
+
+	}
+	return results
 }
