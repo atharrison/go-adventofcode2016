@@ -53,7 +53,15 @@ type Day08Instruction struct {
 func printDay08Grid(grid [][]int) {
 	for y := 0; y < ySize; y++ {
 		for x := 0; x < xSize; x++ {
-			fmt.Printf("%v", day8Grid[y][x])
+
+			// Part 2, make it easier to see:
+			if day8Grid[y][x] == 1 {
+				fmt.Printf("#")
+			} else {
+				fmt.Printf(" ")
+			}
+
+			//fmt.Printf("%v", day8Grid[y][x])
 		}
 		fmt.Println()
 	}
