@@ -19,6 +19,9 @@ type Bot struct {
 	Chips  []int
 }
 
+var part1 = false
+var part2 = true
+
 func Day10() {
 	day := "10"
 	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
@@ -44,17 +47,11 @@ func Day10() {
 
 	for _, instr := range valueInstructions {
 		NewBotFromValInstr(instr)
-
 	}
-
-	//bots["0"] = NewBot("", 0, 0)
-	//bots["1"] = NewBot("1", 3, 0)
-	//bots["2"] = NewBot("2", 2, 5)
 
 	fmt.Printf("Values: %v\n", valueInstructions)
 	fmt.Printf("Bots: %v\n", botInstructions)
 
-	//readyBots := []*Bot{bots["2"]}
 	readyBots := findReadyBots()
 
 	processBots(readyBots)
@@ -86,13 +83,10 @@ func NewBotFromValInstr(instr *ValueInstruction) {
 }
 
 func processBots(readyBots []*Bot) {
-
-	//var nextBots []*Bot
 	for {
 		bot := readyBots[0]
 		readyBots = readyBots[1:]
 
-		//nextBots = []*Bot{}
 		bot1, bot2 := bot.HandleChips()
 		if bot1 != nil && len(bot1.Chips) == 2 {
 			readyBots = append(readyBots, bot1)
@@ -100,9 +94,7 @@ func processBots(readyBots []*Bot) {
 		if bot2 != nil && len(bot2.Chips) == 2 {
 			readyBots = append(readyBots, bot2)
 		}
-		//readyBots = nextBots
 	}
-
 }
 
 func (b *Bot) HandleChips() (*Bot, *Bot) {
@@ -114,7 +106,7 @@ func (b *Bot) HandleChips() (*Bot, *Bot) {
 	lowChip := int(math.Min(float64(b.Chips[0]), float64(b.Chips[1])))
 	highChip := int(math.Max(float64(b.Chips[0]), float64(b.Chips[1])))
 
-	if lowChip == 17 && highChip == 61 {
+	if lowChip == 17 && highChip == 61 && part1 {
 		fmt.Printf("Bot: %v Had 17 and 61!!!!!\n", b.Number)
 		os.Exit(0) //Bail!
 	} else {
@@ -143,7 +135,6 @@ func (b *Bot) HandleChips() (*Bot, *Bot) {
 
 	// Handle High Chip
 	if instr.HighBot != "" {
-		//var bot2 *Bot
 		if bot2, ok := bots[instr.HighBot]; ok {
 			bot2.GiveChip(highChip)
 			rBot2 = bot2
@@ -164,6 +155,15 @@ func (b *Bot) HandleChips() (*Bot, *Bot) {
 	}
 
 	fmt.Printf("rBot1: %v, rBot2: %v\n", rBot1, rBot2)
+	if out0, ok0 := outputs["0"]; ok0 && part2 {
+		if out1, ok1 := outputs["1"]; ok1 {
+			if out2, ok2 := outputs["2"]; ok2 {
+				product := out0[0] * out1[0] * out2[0]
+				fmt.Printf("Output result: %v*%v*%v=%v\n", out0[0], out1[0], out2[0], product)
+				os.Exit(0)
+			}
+		}
+	}
 	return rBot1, rBot2
 }
 
