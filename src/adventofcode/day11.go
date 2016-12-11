@@ -15,14 +15,6 @@ var totalCombinationsCalculated int
 var floorCombinationHash map[string]bool
 
 func Day11() {
-	//day := "11"
-	//filename := fmt.Sprintf("data/day%vinput.txt", day)
-	//input := readFileAsLines(filename)
-	//
-	//for _, line := range input {
-	//	fmt.Printf("Line: %v\n", line)
-	//}
-	//fmt.Printf("%v\n", input)
 
 	maxFloor = 4
 	bestTotalMoves = 1000
@@ -40,6 +32,13 @@ func Day11() {
 	maxGenerators = 5
 
 	// Part 2
+	/*
+		F4 . .  .  .  .  .  .  .  .  .  .  .  .  .  .
+		F3 . .  .  .  .  .  .  PG PM RG RM .  .  .  .
+		F2 . .  .  .  .  LM .  .  .  .  .  SM .  .
+		F1 E DG DM EG EM LG .  .  .  .  .  SG .  TG TM
+	*/
+
 	maxGenerators = 7
 	maxMicrochips = 7
 	floorMap = map[int]*RTGFloor{
@@ -112,9 +111,7 @@ func Day11() {
 
 	floorCombinationHash[FloorMapAndElevatorHash(floorMap, elevator)] = true
 
-	//numMoves := MoveRTGItems(floorMap, elevator, 0)
 	StartRTGMoves(floorMap, elevator)
-	//fmt.Printf("Moves: %v\n", numMoves)
 	fmt.Printf("BestMoves: %v\n", bestTotalMoves)
 }
 
@@ -145,7 +142,6 @@ type RTGFloor struct {
 }
 
 func (f *RTGFloor) String() string {
-
 	return fmt.Sprintf("F%v has %v and %v", f.Number, f.Generators, f.Microchips)
 }
 
@@ -298,62 +294,6 @@ func GenerateNextFloorIteration(option *RTGOptions, floorMap map[int]*RTGFloor, 
 	}
 }
 
-//func MoveRTGItems(floorMap map[int]*RTGFloor, elevator *RTGElevator, moves int) int {
-//
-//	moves = moves+1
-//	if moves > bestTotalMoves {
-//		//No need to continue
-//		return bestTotalMoves
-//	}
-//
-//	options := GetOptionsForElevatorAndFloor(elevator, floorMap)
-//	//fmt.Printf("Options: %v\n", options)
-//
-//	validOptions := []*RTGOptions{}
-//	for _, option := range options {
-//		newFloor, valid1 := NewFloorWithItems(option.Items, floorMap[option.GotoFloor])
-//		_, valid2 := NewFloorWithoutItems(option.Items, floorMap[option.Floor])
-//		if valid1 && valid2 {
-//			if TopFloorHasEverything(newFloor) {
-//				if moves < bestTotalMoves {
-//					fmt.Printf("\nFound Possible best! %v\n", moves)
-//					bestTotalMoves = moves
-//					return moves
-//				}
-//			} else {
-//				validOptions = append(validOptions, option)
-//			}
-//		}
-//	}
-//
-//	best := 9999999
-//	for _, option := range validOptions {
-//		newFloor, _ := NewFloorWithItems(option.Items, floorMap[option.GotoFloor])
-//		oldFloor, _ := NewFloorWithoutItems(option.Items, floorMap[option.Floor])
-//
-//		newFloorMap := MakeNewFloorMap(floorMap, newFloor, oldFloor)
-//		newFloorHash := FloorMapHash(newFloorMap)
-//		if _, ok := floorCombinationHash[newFloorHash]; ok {
-//			//fmt.Printf("Already seen %v, skipping.\n", newFloorHash)
-//			continue
-//		} else {
-//			floorCombinationHash[newFloorHash] = true
-//		}
-//		newElevator := &RTGElevator{
-//			Floor: option.GotoFloor,
-//			Generators: option.Generators(),
-//			Microchips: option.Microchips(),
-//		}
-//		fmt.Printf("New Elevator choice: %v with map %v\r", newElevator, newFloorMap)
-//
-//		nextBest := MoveRTGItems(newFloorMap, newElevator, moves)
-//		if nextBest < best {
-//			best = nextBest
-//		}
-//	}
-//	return best
-//}
-
 func MakeNewFloorMap(floorMap map[int]*RTGFloor, newFloor *RTGFloor, oldFloor *RTGFloor) map[int]*RTGFloor {
 	newFloorMap := map[int]*RTGFloor{}
 	for i := 1; i <= maxFloor; i++ {
@@ -453,23 +393,6 @@ func GetOptionsForElevatorAndFloor(elevator *RTGElevator, floorMap map[int]*RTGF
 	return options
 }
 
-//func FriedOption(option *RTGOptions, floorMap map[int]*RTGFloor) bool {
-//
-//	if len(option.Items) == 0 {
-//		return false
-//	}
-//
-//	for _, item := range option.Items {
-//		if LeavesDanglingFriedMicrochip(item, floorMap[option.Floor]) ||
-//		   //ElevatorFriesMicrochip(item, option.Items) ||
-//		   FriesMicrochipOnFloor(item, floorMap[option.GotoFloor]) {
-//			return false
-//		}
-//	}
-//	return true
-//
-//}
-
 func NewFloorWithItems(items []string, floor *RTGFloor) (*RTGFloor, bool) {
 
 	newGenerators := []string{}
@@ -568,127 +491,6 @@ MCLoop:
 	return newFloor, newFloor.IsValid()
 
 }
-
-//
-//func FriesMicrochipOnFloor(item string, floor *RTGFloor) bool {
-//	fmt.Printf("Can I take %v to %v with %v?\n", item, floor.Number, floor.Generators)
-//
-//	if item[1] == 'G' {
-//		//Taking Generator to new floor..
-//		openMicrochip := false
-//		for _, mc := range floor.Microchips {
-//			if item[0] == mc[0] {
-//				return false //Paired MC with G, we're ok
-//			}
-//			nextMCOpen := true
-//			for _, g := range floor.Generators {
-//				if mc[0] == g[0] {
-//					nextMCOpen = false //This MC has a paired G
-//				}
-//			}
-//			openMicrochip = openMicrochip || nextMCOpen
-//		}
-//		if openMicrochip {
-//			return true // This G will fry an open MC
-//		}
-//
-//	} else { // Bringing a MC to a new floor
-//		openGenerator := false
-//		for _, g := range floor.Generators {
-//			if item[0] == g[0] {
-//				return false // Paired MC with G, we're ok
-//			}
-//			nextOpenGenerator := true
-//			for _, mc := range floor.Microchips {
-//				if mc[0] == g[0] {
-//					nextOpenGenerator = false // This G has a paired MC
-//				}
-//			}
-//			openGenerator = openGenerator || nextOpenGenerator
-//		}
-//		if openGenerator {
-//			return true // This MC will be fried by an open G
-//		}
-//	}
-//	return false // OK. No open Generators to fry this MC, or no dangling MCs to be fried by this G.
-//}
-
-//func ElevatorFriesMicrochip(item string, items []string) bool {
-//	if item[1] == 'G' {
-//		return false
-//	}
-//	for _, other := range items {
-//		if other == item {
-//			continue
-//		}
-//		if other[1] == 'M' {
-//			continue
-//		}
-//		if item[0] != other[0] {
-//			return true
-//		}
-//	}
-//	return false
-//}
-//
-//func LeavesDanglingFriedMicrochip(item string, floor *RTGFloor) bool {
-//	fmt.Printf("Can I remove %v from %v with %v and %v?\n", item, floor.Number, floor.Generators, floor.Microchips)
-//
-//	if len(floor.Generators) == 0 {
-//		// No generators, no fried MCs
-//		return false
-//	}
-//
-//	//item is being removed.
-//	if len(floor.Microchips) == 1 {
-//		// that's us
-//		return false
-//	}
-//
-//	// if generator is open, there must not be open microchips
-//	openMicrochip := false
-//	openGenerator := false
-//
-//	if item[1] == 'M' {
-//		// Taking microchip...
-//		for _, mc := range floor.Microchips {
-//			if mc == item {
-//				continue //Don't check ourselves, we aren't staying
-//			}
-//			nextMCOpen := true
-//			for _, g := range floor.Generators {
-//				if g[0] == item[0] {
-//					// item is being taken, leaving generator open
-//					openGenerator = true
-//				} else if mc[0] == g[0] {
-//					nextMCOpen = false // Still found pair for MC
-//				}
-//			}
-//			openMicrochip = openMicrochip || nextMCOpen
-//		}
-//	} else {
-//		//Taking generator
-//		for _, mc := range floor.Microchips {
-//			nextMCOpen := true
-//			for _, g := range floor.Generators {
-//				if g == item {
-//					continue // We're taking this generator
-//				}
-//				if mc[0] == g[0] {
-//					nextMCOpen = false //Still found pair for MC
-//				}
-//			}
-//			openMicrochip = openMicrochip || nextMCOpen
-//		}
-//	}
-//
-//	if openGenerator && openMicrochip {
-//		fmt.Printf("Taking %v leaves dangling MC. %v - %v\n", item, floor.Generators, floor.Microchips)
-//		return true
-//	}
-//	return false
-//
-//}
 
 func GetNextFloors(floor int) []int {
 	var nextFloors []int
