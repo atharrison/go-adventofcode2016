@@ -25,7 +25,7 @@ func Day11() {
 	//fmt.Printf("%v\n", input)
 
 	maxFloor = 4
-	bestTotalMoves = 9999999
+	bestTotalMoves = 1000
 	var floorMap map[int]*RTGFloor
 
 	/*
@@ -34,13 +34,26 @@ func Day11() {
 		F2 . .  LM .  .  .  .  .  SM .  .
 		F1 E LG .  .  .  .  .  SG .  TG TM
 	*/
+
+	// Part 1
 	maxMicrochips = 5
 	maxGenerators = 5
+
+	// Part 2
+	maxGenerators = 7
+	maxMicrochips = 7
 	floorMap = map[int]*RTGFloor{
+		// Part 1
+		//1: &RTGFloor{
+		//	Number:     1,
+		//	Generators: []string{"LG", "SG", "TG"},
+		//	Microchips: []string{"TM"},
+		//},
+		// Part 2: New items
 		1: &RTGFloor{
 			Number:     1,
-			Generators: []string{"LG", "SG", "TG"},
-			Microchips: []string{"TM"},
+			Generators: []string{"DG", "EG", "LG", "SG", "TG"},
+			Microchips: []string{"DM", "EM", "TM"},
 		},
 		2: &RTGFloor{
 			Number:     2,
@@ -247,8 +260,8 @@ func GenerateNextFloorIteration(option *RTGOptions, floorMap map[int]*RTGFloor, 
 	oldFloor, _ := NewFloorWithoutItems(option.Items, floorMap[option.Floor])
 
 	moves += 1
-	if moves > 125 {
-		return nil //I know it is not higher than 123, for Part1
+	if moves > bestTotalMoves { //I know it is not higher than 123, for Part1
+		return nil
 	}
 	if option.GotoFloor == maxFloor && TopFloorHasEverything(newFloor) {
 		fmt.Printf("\nFound Possible best... %v\n", moves)
