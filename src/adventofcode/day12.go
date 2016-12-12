@@ -17,6 +17,11 @@ func Day12() {
 		instructions = append(instructions, NewABInstr(line))
 	}
 
+	//instructions = OptimizeInstructions(instructions)
+	//for idx, instr := range instructions {
+	//	fmt.Printf("%v: %v\n", idx, instr)
+	//}
+
 	comp := &ABComputer{
 		Registers: map[string]int{
 			//"a": 0, "b": 0, "c": 0, "d": 0, // Part 1
@@ -26,7 +31,40 @@ func Day12() {
 
 	RunABComputer(comp, instructions)
 
-	fmt.Printf("Result: %v\n", comp.Registers["a"])
+	fmt.Printf("\n\nResult: %v\n", comp.Registers["a"])
+}
+
+func OptimizeInstructions(instructions []*ABInstr) []*ABInstr {
+	optimized := []*ABInstr{}
+
+	for idx, instr := range instructions {
+		if idx > 1 {
+			if instr.Name == "jnz" && instr.YVal == "-2" &&
+				instr.XVal == instructions[idx-1].XVal &&
+				instructions[idx-1].Name == "dec" &&
+				instructions[idx-2].Name == "inc" {
+				optimized = optimized[0 : len(optimized)-2]
+				newInstr := &ABInstr{
+					Name: "incv",
+					XVal: instructions[idx-2].XVal,
+					YVal: instructions[idx-1].XVal,
+				}
+				optimized = append(optimized, newInstr)
+				newInstr = &ABInstr{
+					Name: "cpy",
+					XVal: "0",
+					YVal: instructions[idx-1].XVal,
+				}
+				optimized = append(optimized, newInstr)
+				//TODO: Adjust any jumps that would have been affected by this optimization.
+			} else {
+				optimized = append(optimized, instr)
+			}
+		} else {
+			optimized = append(optimized, instr)
+		}
+	}
+	return optimized
 }
 
 func RunABComputer(comp *ABComputer, instructions []*ABInstr) {
@@ -38,7 +76,8 @@ func RunABComputer(comp *ABComputer, instructions []*ABInstr) {
 }
 
 func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int) int {
-	fmt.Printf("[%v] Instr: %v, Comp: %v       \r", ptr, instr, comp)
+	//Ha! Best optimization is simply not to print every line of execution
+	//fmt.Printf("[%v] Instr: %v, Comp: %v       \r", ptr, instr, comp)
 	switch instr.Name {
 	case "cpy":
 		val := GetValueForInstr(instr.XVal, comp)
@@ -59,6 +98,16 @@ func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int) int {
 
 	case "dec":
 		comp.Registers[instr.XVal] -= 1
+		ptr += 1
+
+	// New optimized instructions:
+	case "incv":
+		val := GetValueForInstr(instr.YVal, comp)
+		comp.Registers[instr.XVal] += val
+		ptr += 1
+	case "decv":
+		val := GetValueForInstr(instr.YVal, comp)
+		comp.Registers[instr.XVal] -= val
 		ptr += 1
 	}
 	return ptr
@@ -100,7 +149,7 @@ func NewABInstr(line string) *ABInstr {
 			XVal: tokens[1],
 			YVal: tokens[2],
 		}
-	case "inc", "dec":
+	case "inc", "dec", "incv", "decv":
 		return &ABInstr{
 			Name: tokens[0],
 			XVal: tokens[1],
