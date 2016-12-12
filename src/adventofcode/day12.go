@@ -19,7 +19,8 @@ func Day12() {
 
 	comp := &ABComputer{
 		Registers: map[string]int{
-			"a": 0, "b": 0, "c": 0, "d": 0,
+			//"a": 0, "b": 0, "c": 0, "d": 0, // Part 1
+			"a": 0, "b": 0, "c": 1, "d": 0, // Part 2
 		},
 	}
 
@@ -37,7 +38,7 @@ func RunABComputer(comp *ABComputer, instructions []*ABInstr) {
 }
 
 func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int) int {
-	fmt.Printf("[%v] Instr: %v, Comp: %v\n", ptr, instr, comp)
+	fmt.Printf("[%v] Instr: %v, Comp: %v       \r", ptr, instr, comp)
 	switch instr.Name {
 	case "cpy":
 		val := GetValueForInstr(instr.XVal, comp)
