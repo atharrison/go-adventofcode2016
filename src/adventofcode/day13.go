@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"sort"
-	"strconv"
 )
 
 const maxSize = 75
@@ -13,11 +12,12 @@ const maxSize = 75
 //const favoriteNumber = 10
 const favoriteNumber = 1352
 
+var traveled = make(map[string]*Location)
+
 func Day13() {
 
 	//goalX, goalY := 7, 4
 	goalX, goalY := 31, 39
-	//goalY, goalX := 31, 39
 
 	floorplan := make([][]string, maxSize)
 	for y := 0; y < maxSize; y++ {
@@ -41,19 +41,21 @@ func Day13() {
 	PrintFloorplan(floorplan)
 
 	fmt.Println(WalkFloor(floorplan, goalX, goalY))
-	//FillFloor(floorplan, goalX, goalY)
-	//PrintFloorplan(floorplan)
+
+	// Part 2 (I was already tracking 'traveled', so just needed to ask what I tracked
+	shorts := 0
+	for _, v := range traveled {
+		if v.Dist <= 50 {
+			shorts += 1
+		}
+	}
+	fmt.Printf("50 or better: %v\n", shorts)
 }
 
 func PrintFloorplan(floorplan [][]string) {
 	for y := 0; y < maxSize; y++ {
 		for x := 0; x < maxSize; x++ {
 			fmt.Printf(floorplan[y][x])
-			//if floorplan[y][x] {
-			//	fmt.Printf("#")
-			//} else {
-			//	fmt.Printf(".")
-			//}
 		}
 		fmt.Println()
 	}
@@ -100,55 +102,6 @@ func (slice Locations) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-//func FillFloor(floorplan map[int][]string, goalX, goalY int) {
-//
-//	floorplan[1][1] = "0"
-//	for y := 0; y < maxSize; y++ {
-//		for x := 0; x < maxSize; x++ {
-//			if floorplan[y][x] == "." {
-//				floorplan[y][x] = strconv.Itoa(BestWalkTo(floorplan, x, y))
-//
-//			} else if floorplan[y][x] != "#" {
-//				tryBest := BestWalkTo(floorplan, x, y)
-//				parsed, _ := strconv.Atoi(floorplan[y][x])
-//				if tryBest > parsed {
-//					floorplan[y][x] = strconv.Itoa(parsed)
-//				}
-//
-//			}
-//
-//
-//
-//		}
-//	}
-//	fmt.Println("Best? %v\n", floorplan[goalY][goalX])
-//}
-
-//func BestWalkTo(floorplan map[int][]string, x, y int) int {
-//	best := 100
-//
-//	for xDelta := -1; xDelta < 2; xDelta++ {
-//		if x + xDelta < 0 || x + xDelta >= maxSize {
-//			continue
-//		}
-//		for yDelta := -1; yDelta < 2; yDelta++ {
-//			if y + yDelta < 0 || y + yDelta >= maxSize {
-//				continue
-//			}
-//
-//			val := floorplan[y+yDelta][x+xDelta]
-//			if val != "#" && val != "." {
-//				parsed, _ := strconv.Atoi(val)
-//				if parsed < best {
-//					best = parsed
-//				}
-//			}
-//
-//		}
-//	}
-//	return best
-//}
-
 func WalkFloor(floorplan [][]string, goalX, goalY int) int {
 
 	lowestDist := 9999
@@ -160,12 +113,11 @@ func WalkFloor(floorplan [][]string, goalX, goalY int) int {
 		},
 	}
 
-	traveled := make(map[string]*Location)
-
 	for len(stepsToProcess) > 0 {
 
 		next := stepsToProcess[0]
 		stepsToProcess = stepsToProcess[1:]
+		fmt.Printf("Best: %v\t ToProcess: %v\tNow at [%v, %v] D:%v    \n", lowestDist, len(stepsToProcess), next.X, next.Y, next.Dist)
 		if next.Dist > lowestDist {
 			continue
 		}
@@ -174,8 +126,6 @@ func WalkFloor(floorplan [][]string, goalX, goalY int) int {
 			lowestDist = next.Dist
 			fmt.Printf("Best Dist now %v\n", lowestDist)
 		}
-
-		fmt.Printf("Best: %v\t ToProcess: %v\tNow at [%v, %v] D:%v    \n", lowestDist, len(stepsToProcess), next.X, next.Y, next.Dist)
 
 		for xDelta := -1; xDelta < 2; xDelta++ {
 			if next.X+xDelta < 0 || next.X+xDelta >= maxSize {
@@ -204,8 +154,8 @@ func WalkFloor(floorplan [][]string, goalX, goalY int) int {
 
 					h := newLoc.Hash()
 					if loc, ok := traveled[h]; ok {
-						if loc.Dist > next.Dist {
-							traveled[h] = next
+						if loc.Dist > newLoc.Dist {
+							traveled[h] = newLoc
 							stepsToProcess = append(stepsToProcess, newLoc)
 						}
 					} else {
