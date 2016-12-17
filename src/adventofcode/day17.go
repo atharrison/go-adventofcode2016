@@ -9,9 +9,14 @@ import (
 func Day17() {
 
 	//input := "ihgpwlah"
+	//input := "kglvqrro"
+	//input := "ulqzkmiv"
 	input := "qtetzkpl"
 	bestPath := ""
 	aBestPathFound := false
+
+	// Part 2
+	longestPath := ""
 
 	toTry := Paths{Path{Value: input, xLoc: 0, yLoc: 0}}
 
@@ -22,23 +27,34 @@ func Day17() {
 		fmt.Printf("(%v) Checking %v at %v,%v\n", len(toTry), next.Value, next.xLoc, next.yLoc)
 		if next.xLoc == 3 && next.yLoc == 3 {
 			if len(next.Value) < len(bestPath) || !aBestPathFound {
-				fmt.Printf("(%v) Found potential best %v of length %v", len(toTry), next.Value, len(next.Value))
-				aBestPathFound = true
+				fmt.Printf("(%v) Found potential best %v of length %v\n", len(toTry), next.Value, len(next.Value))
 				bestPath = next.Value
 			}
+			if !aBestPathFound {
+				aBestPathFound = true
+			}
+
+			// Part 2:
+			if len(next.Value) > len(longestPath) {
+				longestPath = next.Value
+			}
+			continue
 		}
 
 		openDoors := openDoorsForInput(next.Value)
+
 		for _, d := range openDoors {
+			//fmt.Printf("For %v, adding %v\n", next.Value, string(d))
 			switch d {
 			case 'U':
-				if next.yLoc > 1 {
+				if next.yLoc > 0 {
 					newPath := Path{
 						Value: next.Value + "U",
 						xLoc:  next.xLoc,
 						yLoc:  next.yLoc - 1,
 					}
 					toTry = append(toTry, newPath)
+					//fmt.Printf("Adding U to Paths, now len (%v)\n", len(toTry))
 				}
 			case 'D':
 				if next.yLoc < 3 {
@@ -48,15 +64,17 @@ func Day17() {
 						yLoc:  next.yLoc + 1,
 					}
 					toTry = append(toTry, newPath)
+					//fmt.Printf("Adding D to Paths, now len (%v)\n", len(toTry))
 				}
 			case 'L':
-				if next.xLoc > 1 {
+				if next.xLoc > 0 {
 					newPath := Path{
 						Value: next.Value + "L",
 						xLoc:  next.xLoc - 1,
 						yLoc:  next.yLoc,
 					}
 					toTry = append(toTry, newPath)
+					//fmt.Printf("Adding L to Paths, now len (%v)\n", len(toTry))
 				}
 			case 'R':
 				if next.xLoc < 3 {
@@ -66,14 +84,17 @@ func Day17() {
 						yLoc:  next.yLoc,
 					}
 					toTry = append(toTry, newPath)
+					//fmt.Printf("Adding R to Paths, now len (%v)\n", len(toTry))
 				}
 			}
 
 		}
+		//fmt.Printf("toTry now len (%v)\n", len(toTry))
 		sort.Sort(toTry)
 	}
 
 	fmt.Printf("Best Path: %v\n", bestPath)
+	fmt.Printf("Len Longest Path: %v\n", len(longestPath)-len(input))
 }
 
 type Paths []Path
@@ -94,6 +115,7 @@ var doors = []rune{'U', 'D', 'L', 'R'}
 
 func openDoorsForInput(input string) []rune {
 	roomHash := fmt.Sprintf("%x", md5.Sum([]byte(input)))
+	//fmt.Printf("hash: %v", roomHash[0:4])
 
 	result := []rune{}
 
@@ -104,6 +126,7 @@ func openDoorsForInput(input string) []rune {
 			result = append(result, doors[i])
 		}
 	}
+	//fmt.Printf(" adds %v\n", result)
 	return result
 
 }
