@@ -9,20 +9,25 @@ func Day18() {
 
 	input := ".^^.^^^..^.^..^.^^.^^^^.^^.^^...^..^...^^^..^^...^..^^^^^^..^.^^^..^.^^^^.^^^.^...^^^.^^.^^^.^.^^.^."
 	//input := ".^^.^.^^^^"
-	maxRows := 40
+	//maxRows := 40
 	//maxRows := 10
+
+	// Part 2: (efficient enough, just don't save all prev rows, and don't output until finished)
+	maxRows := 400000
+
 	row := strings.Split(input, "")
 	//fmt.Printf("%v\n", row)
 
-	rows := make([][]string, maxRows)
-	rows[0] = row
-
+	//rows := make([][]string, maxRows)
+	//rows[0] = row
+	nextRow := row
 	totalSafe := countSafe(row)
-	fmt.Printf("%v (%v)\n", row, totalSafe)
+	//fmt.Printf("%v (%v)\n", row, totalSafe)
 	for rowIdx := 1; rowIdx < maxRows; rowIdx++ {
-		prevRow := rows[rowIdx-1]
+		//prevRow := rows[rowIdx-1]
+		prevRow := nextRow
 
-		nextRow := make([]string, len(prevRow))
+		nextRow = make([]string, len(prevRow))
 		for x := 0; x < len(prevRow); x++ {
 			if IsNextTileSafe(prevRow, x) {
 				nextRow[x] = "."
@@ -31,8 +36,8 @@ func Day18() {
 			}
 		}
 		totalSafe += countSafe(nextRow)
-		rows[rowIdx] = nextRow
-		fmt.Printf("%v (%v)\n", nextRow, totalSafe)
+		//rows[rowIdx] = nextRow
+		//fmt.Printf("%v (%v)\n", nextRow, totalSafe)
 	}
 	//fmt.Println(rows[maxRows-1])
 
