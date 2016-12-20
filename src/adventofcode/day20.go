@@ -24,7 +24,22 @@ func Day20() {
 			break
 		}
 	}
-	fmt.Println("Done 20")
+
+	//Part 2
+	var maxVal uint32
+	maxVal = 4294967295
+	var count uint32
+	for i := 0; i < len(ranges)-1; i++ {
+		if ranges[i].end < ranges[i+1].start-1 {
+			gap := ranges[i+1].start - ranges[i].end - 1
+			count += gap
+			fmt.Printf("Gap of %v between %v and %v\n", gap, ranges[i], ranges[i+1])
+		}
+	}
+	gap := maxVal - ranges[len(ranges)-1].end
+	fmt.Printf("Adding %v at the end, after %v\n", gap, ranges[len(ranges)-1])
+	count += gap
+	fmt.Printf("Total Valid: %v\n", count)
 
 	//naive:
 	//values := map[int]bool{}
@@ -53,8 +68,8 @@ func Day20() {
 }
 
 type Range struct {
-	start int
-	end   int
+	start uint32
+	end   uint32
 }
 
 func (r *Range) String() string {
@@ -74,8 +89,8 @@ func (r *Range) Contains(other *Range) bool {
 
 func CombineRanges(r1 *Range, r2 *Range) *Range {
 
-	newStart := int(math.Min(float64(r1.start), float64(r2.start)))
-	newEnd := int(math.Max(float64(r1.end), float64(r2.end)))
+	newStart := uint32(math.Min(float64(r1.start), float64(r2.start)))
+	newEnd := uint32(math.Max(float64(r1.end), float64(r2.end)))
 	return &Range{
 		start: newStart,
 		end:   newEnd,
@@ -84,11 +99,11 @@ func CombineRanges(r1 *Range, r2 *Range) *Range {
 
 func NewRange(line string) *Range {
 	tokens := strings.Split(line, "-")
-	smallVal, _ := strconv.Atoi(tokens[0])
-	largeVal, _ := strconv.Atoi(tokens[1])
+	smallVal, _ := strconv.ParseUint(tokens[0], 10, 32)
+	largeVal, _ := strconv.ParseUint(tokens[1], 10, 32)
 	return &Range{
-		start: smallVal,
-		end:   largeVal,
+		start: uint32(smallVal),
+		end:   uint32(largeVal),
 	}
 }
 
@@ -124,10 +139,16 @@ func InsertRange(r *Range, ranges []*Range) []*Range {
 			fmt.Printf("(%v)\tCombining %v with %v\n", len(ranges), r, ranges[0])
 			newRange := CombineRanges(r, ranges[0])
 			newRanges = append(newRanges, newRange)
-			newRanges = append(newRanges, ranges[1:]...)
+			//newRanges = append(newRanges, ranges[1:]...)
+			for _, rr := range ranges[1:] {
+				newRanges = append(newRanges, rr)
+			}
 		} else {
 			newRanges = append(newRanges, r)
-			newRanges = append(newRanges, ranges[0:]...)
+			//newRanges = append(newRanges, ranges[0:]...)
+			for _, rr := range ranges[0:] {
+				newRanges = append(newRanges, rr)
+			}
 		}
 		fmt.Printf("(%v)\tAfter Front insert, %v then %v\n", len(ranges), ranges[0], ranges[1])
 		return newRanges
@@ -142,22 +163,36 @@ func InsertRange(r *Range, ranges []*Range) []*Range {
 			if i == 0 {
 				fmt.Printf("(%v)\tInserting Combined %v at front\n", len(ranges), newRange)
 				newRanges = []*Range{newRange}
-				newRanges = append(newRanges, ranges[1:]...)
+				//newRanges = append(newRanges, ranges[1:]...)
+				for _, rr := range ranges[1:] {
+					newRanges = append(newRanges, rr)
+				}
 				//fmt.Printf("(%v)\tAfter Combined insert\n", len(newRanges))
 				appended = true
 				break
 			} else if i == len(ranges)-1 {
 				fmt.Printf("(%v)\tInserting Combined %v at end\n", len(ranges), newRange)
-				newRanges = ranges[0 : i-1]
+				for _, rr := range ranges[0 : i-1] {
+					newRanges = append(newRanges, rr)
+				}
+				//newRanges = ranges[0 : i-1]
 				newRanges = append(newRanges, newRange)
 				//fmt.Printf("(%v)\tAfter Combined insert\n", len(newRanges))
 				appended = true
 				break
 			} else {
 				fmt.Printf("(%v)\tInserting Combined %v before %v\n", len(ranges), newRange, ranges[i+1])
-				newRanges = ranges[0:i]
+				//newRanges = ranges[0:i]
+				for _, rr := range ranges[0:i] {
+					newRanges = append(newRanges, rr)
+				}
+
 				newRanges = append(newRanges, newRange)
-				newRanges = append(newRanges, ranges[i+1:]...)
+				//newRanges = append(newRanges, ranges[i+1:]...)
+				for _, rr := range ranges[i+1:] {
+					newRanges = append(newRanges, rr)
+				}
+
 				//fmt.Printf("(%v)\tAfter Combined insert\n", len(newRanges))
 				appended = true
 				break
@@ -166,7 +201,10 @@ func InsertRange(r *Range, ranges []*Range) []*Range {
 			if i == 0 {
 				fmt.Printf("(%v)\tInserting %v at start, in front of %v\n", len(ranges), r, ranges[i])
 				newRanges = []*Range{r}
-				newRanges = append(newRanges, ranges...)
+				for _, rr := range ranges {
+					newRanges = append(newRanges, rr)
+				}
+				//newRanges = append(newRanges, ranges...)
 				appended = true
 				//PrintRanges(newRanges)
 				//os.Exit(1)
@@ -178,7 +216,10 @@ func InsertRange(r *Range, ranges []*Range) []*Range {
 				}
 				//newRanges = ranges[0:i]
 				newRanges = append(newRanges, r)
-				newRanges = append(newRanges, ranges[i:]...)
+				for _, rr := range ranges[i:] {
+					newRanges = append(newRanges, rr)
+				}
+				//newRanges = append(newRanges, ranges[i:]...)
 				//PrintRanges(newRanges)
 				//os.Exit(1)
 				appended = true
