@@ -5,9 +5,13 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	//"os"
 )
 
+var maxVal uint32
+
 func Day20() {
+	maxVal = 4294967295
 	day := "20"
 	filename := fmt.Sprintf("data/day%vinput.txt", day)
 	input := readFileAsLines(filename)
@@ -26,8 +30,8 @@ func Day20() {
 	}
 
 	//Part 2
-	var maxVal uint32
-	maxVal = 4294967295
+	//var maxVal uint32
+
 	var count uint32
 	for i := 0; i < len(ranges)-1; i++ {
 		if ranges[i].end < ranges[i+1].start-1 {
@@ -156,15 +160,47 @@ func InsertRange(r *Range, ranges []*Range) []*Range {
 
 	for i := 0; i < len(ranges); i++ {
 		if r.Overlaps(ranges[i]) {
-			//PrintRanges(ranges)
-			//os.Exit(1)
 			fmt.Printf("(%v)\tCombining %v with %v\n", len(ranges), r, ranges[i])
+			atBeginning := i == 0
+			startInsert := i
 			newRange := CombineRanges(r, ranges[i])
-			if i == 0 {
+
+			if newRange.end == maxVal {
+				for _, rr := range ranges[0 : i-1] {
+					newRanges = append(newRanges, rr)
+				}
+				newRanges = append(newRanges, newRange)
+				fmt.Printf("(%v)\t-====> End of MaxVal cleaned out remaining. %v\n", len(newRanges), newRange)
+				appended = true
+				break
+			}
+
+			needsMoreCombines := i < len(ranges)-1 && newRange.end > ranges[i+1].start
+
+			for needsMoreCombines {
+				i++
+				fmt.Printf("-----> Multiple Combine, %v now with %v\n", newRange, ranges[i])
+				newRange = CombineRanges(newRange, ranges[i])
+				needsMoreCombines = (i < len(ranges)-1 && newRange.end > ranges[i+1].start)
+			}
+			if i == len(ranges)-1 && newRange.end > ranges[i].start {
+				fmt.Printf("WTF? %v and %v still to combine\n", newRange, ranges[i])
+				newRange = CombineRanges(newRange, ranges[i])
+				//i++
+				//os.Exit(1)
+			}
+			//for needsMoreCombines {
+			//	fmt.Printf("-----> Multiple Combine, %v now with %v\n", newRange, ranges[i+1])
+			//	newRange = CombineRanges(newRange, ranges[i+1])
+			//	i++
+			//	needsMoreCombines = (i < len(ranges)-1 && newRange.end > ranges[i+1].start)
+			//}
+
+			if atBeginning {
 				fmt.Printf("(%v)\tInserting Combined %v at front\n", len(ranges), newRange)
 				newRanges = []*Range{newRange}
 				//newRanges = append(newRanges, ranges[1:]...)
-				for _, rr := range ranges[1:] {
+				for _, rr := range ranges[i:] {
 					newRanges = append(newRanges, rr)
 				}
 				//fmt.Printf("(%v)\tAfter Combined insert\n", len(newRanges))
@@ -183,7 +219,7 @@ func InsertRange(r *Range, ranges []*Range) []*Range {
 			} else {
 				fmt.Printf("(%v)\tInserting Combined %v before %v\n", len(ranges), newRange, ranges[i+1])
 				//newRanges = ranges[0:i]
-				for _, rr := range ranges[0:i] {
+				for _, rr := range ranges[0:startInsert] {
 					newRanges = append(newRanges, rr)
 				}
 
