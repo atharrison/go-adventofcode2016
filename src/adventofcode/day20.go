@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	//"os"
+	"sort"
 )
 
 var maxVal uint32
@@ -91,6 +92,20 @@ func (r *Range) Contains(other *Range) bool {
 	return r.start >= other.start && r.end >= other.end
 }
 
+type Ranges []*Range
+
+func (slice Ranges) Len() int {
+	return len(slice)
+}
+
+func (slice Ranges) Less(i, j int) bool {
+	return slice[i].start < slice[j].start
+}
+
+func (slice Ranges) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
 func CombineRanges(r1 *Range, r2 *Range) *Range {
 
 	newStart := uint32(math.Min(float64(r1.start), float64(r2.start)))
@@ -111,7 +126,39 @@ func NewRange(line string) *Range {
 	}
 }
 
-func BuildIPRange(input []string) []*Range {
+func BuildIPRange(input []string) Ranges {
+	var ranges Ranges
+	for _, line := range input {
+		r := NewRange(line)
+		ranges = append(ranges, r)
+	}
+
+	sort.Sort(ranges)
+	fmt.Println("Sorted Ranges -----")
+	PrintRanges(ranges)
+
+	var compressed Ranges
+	compressed = []*Range{}
+	var cur *Range
+	for i := 0; i < len(ranges); i++ {
+		if cur == nil {
+			fmt.Printf("No cur, setting to %v\n", ranges[i])
+			cur = ranges[i]
+		} else if !cur.Overlaps(ranges[i]) {
+			fmt.Printf("Adding %v to final list.\n", cur)
+			compressed = append(compressed, cur)
+			cur = ranges[i]
+		} else {
+			fmt.Printf("Combining %v with %v\n", cur, ranges[i])
+			cur = CombineRanges(cur, ranges[i])
+		}
+	}
+	compressed = append(compressed, cur)
+
+	return compressed
+}
+
+func BuildIPRangeOld(input []string) []*Range {
 	var ranges []*Range
 	for _, line := range input {
 		r := NewRange(line)
