@@ -3,6 +3,7 @@ package adventofcode
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -13,18 +14,65 @@ func Day21() {
 	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
 	input := readFileAsLines(filename)
 
-	toScramble := "abcdefgh"
+	// Part 1
+	//toScramble := "abcdefgh"
 	//toScramble := "abcde"
 
+	//instructions := []*Day21Instruction{}
+	//for _, line := range input {
+	//	instr := ParseDay21Instruction(line)
+	//	instructions = append(instructions, instr)
+	//	fmt.Printf("%v\n", instr)
+	//}
+
+	// Part 2
 	instructions := []*Day21Instruction{}
-	for _, line := range input {
-		instr := ParseDay21Instruction(line)
+	toScramble := "fbgdceah"
+	//toScramble := "decab"
+	for i := len(input) - 1; i >= 0; i-- {
+		line := input[i]
+		instr := ReverseDay21Instruction(ParseDay21Instruction(line))
 		instructions = append(instructions, instr)
 		fmt.Printf("%v\n", instr)
 	}
 
 	result := ProcessDay21Instructions(toScramble, instructions)
 	fmt.Printf("%v\n", result)
+}
+
+func ReverseDay21Instruction(instr *Day21Instruction) *Day21Instruction {
+	switch instr.Action {
+	case "swapP":
+		return instr
+	case "swapL":
+		return instr
+	case "rotateL":
+		return &Day21Instruction{
+			Action: "rotateR",
+			PosX:   instr.PosX,
+		}
+	case "rotateR":
+		return &Day21Instruction{
+			Action: "rotateL",
+			PosX:   instr.PosX,
+		}
+	case "rotateB":
+		return &Day21Instruction{
+			Action:  "rotateBBack",
+			LetterX: instr.LetterX,
+		}
+	case "reverse":
+		return instr
+	case "move":
+		return &Day21Instruction{
+			Action: instr.Action,
+			PosX:   instr.PosY,
+			PosY:   instr.PosX,
+		}
+	default:
+		fmt.Printf("Unknown instr %v\n", instr.Action)
+		return nil
+	}
 }
 
 func ProcessDay21Instructions(toScramble string, instructions []*Day21Instruction) string {
@@ -59,15 +107,19 @@ func ProcessDay21Instructions(toScramble string, instructions []*Day21Instructio
 			to the right one time, plus a number of times equal to that index,
 			plus one additional time if the index was at least 4.
 			*/
-			posX := FindPositionForLetter(letters, instr.LetterX)
-			rotateRightCount := posX + 1
-			if posX >= 4 {
-				rotateRightCount++
-			}
-			for i := 0; i < rotateRightCount; i++ {
-				letters = RotateRight(letters)
-			}
+			letters, _ = RotateB(letters, instr.LetterX)
+		case "rotateBBack":
+			// Rotate left until executing a 'rotateB' would result in the original
+			fmt.Printf("RotateBBack start with %v\n", letters)
+			checkLetters := RotateLeft(letters)
+			rotated, rotatedRightCount := RotateB(letters, instr.LetterX)
 
+			for !reflect.DeepEqual(letters, rotated) {
+				checkLetters = RotateLeft(checkLetters)
+				rotated, rotatedRightCount = RotateB(checkLetters, instr.LetterX)
+				fmt.Printf("Rotating left produces %v, which RotateB would result in %v (%v)\n", checkLetters, rotated, rotatedRightCount)
+			}
+			letters = checkLetters
 		case "reverse":
 			letters = ReverseLetters(letters, instr.PosX, instr.PosY)
 		case "move":
@@ -85,6 +137,19 @@ func ProcessDay21Instructions(toScramble string, instructions []*Day21Instructio
 		result += letters[i]
 	}
 	return result
+}
+
+func RotateB(letters []string, letter string) ([]string, int) {
+	posX := FindPositionForLetter(letters, letter)
+	result := letters
+	rotateRightCount := posX + 1
+	if posX >= 4 {
+		rotateRightCount++
+	}
+	for i := 0; i < rotateRightCount; i++ {
+		result = RotateRight(result)
+	}
+	return result, rotateRightCount
 }
 
 func MoveLetter(letters []string, start int, end int) []string {
