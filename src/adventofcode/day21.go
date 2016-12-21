@@ -15,29 +15,56 @@ func Day21() {
 	input := readFileAsLines(filename)
 
 	// Part 1
-	//toScramble := "abcdefgh"
+	toScramble := "abcdefgh"
 	//toScramble := "abcde"
 
-	//instructions := []*Day21Instruction{}
-	//for _, line := range input {
-	//	instr := ParseDay21Instruction(line)
-	//	instructions = append(instructions, instr)
-	//	fmt.Printf("%v\n", instr)
-	//}
-
-	// Part 2
 	instructions := []*Day21Instruction{}
-	toScramble := "fbgdceah"
-	//toScramble := "decab"
-	for i := len(input) - 1; i >= 0; i-- {
-		line := input[i]
-		instr := ReverseDay21Instruction(ParseDay21Instruction(line))
+	for _, line := range input {
+		instr := ParseDay21Instruction(line)
 		instructions = append(instructions, instr)
 		fmt.Printf("%v\n", instr)
 	}
 
-	result := ProcessDay21Instructions(toScramble, instructions)
-	fmt.Printf("%v\n", result)
+	scrambledResult, partialScrambledTmp := ProcessDay21Instructions(toScramble, instructions)
+
+	partialScrambled := [][]string{strings.Split(toScramble, "")}
+	partialScrambled = append(partialScrambled, partialScrambledTmp...)
+
+	// Part 2
+	reversedInstructions := []*Day21Instruction{}
+	toUnscramble := "fbgdceah"
+	//toUnscramble := "dgfaehcb" // Should result in 'abcdefgh'
+	//toScramble := "decab" // Seems to be unsolvable, as a moveB reversed results in a different outcome.
+	for i := len(input) - 1; i >= 0; i-- {
+		line := input[i]
+		instr := ReverseDay21Instruction(ParseDay21Instruction(line))
+		reversedInstructions = append(reversedInstructions, instr)
+		fmt.Printf("%v\n", instr)
+	}
+
+	unscrambledResult, partialUnscrambledTmp := ProcessDay21Instructions(toUnscramble, reversedInstructions)
+	partialUnscrambled := [][]string{strings.Split(toUnscramble, "")}
+	partialUnscrambled = append(partialUnscrambled, partialUnscrambledTmp...)
+
+	fmt.Printf("Scrambled: %v\tUnscrambled:%v\n", scrambledResult, unscrambledResult)
+	fmt.Printf("len: %v\t len: %v\n", len(partialScrambled), len(partialUnscrambled))
+
+	// DEBUG: Test known scrambled/unscrambled, and check each step to see which are failing.
+	// toScramble := "abcdefgh"
+	// toUnscramble := "dgfaehcb" // Should result in 'abcdefgh'
+	for i := 0; i < len(partialScrambled); i++ {
+		equal := reflect.DeepEqual(partialScrambled[i], partialUnscrambled[len(partialUnscrambled)-i-1])
+
+		if i == len(reversedInstructions) {
+			fmt.Printf("\t\t%v -%v- %v\t\n", partialScrambled[i], equal,
+				partialUnscrambled[len(partialUnscrambled)-i-1])
+		} else {
+			fmt.Printf("%v\t%v -%v- %v\t %v\n", instructions[i], partialScrambled[i], equal,
+				partialUnscrambled[len(partialUnscrambled)-i-1], reversedInstructions[len(reversedInstructions)-i-1])
+		}
+	}
+
+	fmt.Printf("Part 2 result: %v\n", unscrambledResult)
 }
 
 func ReverseDay21Instruction(instr *Day21Instruction) *Day21Instruction {
@@ -75,11 +102,12 @@ func ReverseDay21Instruction(instr *Day21Instruction) *Day21Instruction {
 	}
 }
 
-func ProcessDay21Instructions(toScramble string, instructions []*Day21Instruction) string {
+func ProcessDay21Instructions(toScramble string, instructions []*Day21Instruction) (string, [][]string) {
 	letters := strings.Split(toScramble, "")
+	partials := make([][]string, len(instructions))
 	fmt.Printf("Letters: %v\n", letters)
-	for _, instr := range instructions {
-		fmt.Printf("Letters now: %v, applying %v\n", letters, instr)
+	for idx, instr := range instructions {
+		//fmt.Printf("Letters now: %v, applying %v\n", letters, instr)
 		switch instr.Action {
 		case "swapP":
 			temp := letters[instr.PosX]
@@ -110,14 +138,17 @@ func ProcessDay21Instructions(toScramble string, instructions []*Day21Instructio
 			letters, _ = RotateB(letters, instr.LetterX)
 		case "rotateBBack":
 			// Rotate left until executing a 'rotateB' would result in the original
-			fmt.Printf("RotateBBack start with %v\n", letters)
-			checkLetters := RotateLeft(letters)
-			rotated, rotatedRightCount := RotateB(letters, instr.LetterX)
+			//fmt.Printf("RotateBBack start with %v\n", letters)
+			checkLetters := make([]string, len(letters))
+			copy(checkLetters, letters)
+			rotated, _ := RotateB(letters, instr.LetterX)
+			//rotated, rotatedRightCount := RotateB(letters, instr.LetterX)
 
 			for !reflect.DeepEqual(letters, rotated) {
 				checkLetters = RotateLeft(checkLetters)
-				rotated, rotatedRightCount = RotateB(checkLetters, instr.LetterX)
-				fmt.Printf("Rotating left produces %v, which RotateB would result in %v (%v)\n", checkLetters, rotated, rotatedRightCount)
+				rotated, _ = RotateB(checkLetters, instr.LetterX)
+				//rotated, rotatedRightCount = RotateB(checkLetters, instr.LetterX)
+				//fmt.Printf("Rotating left produces %v, which RotateB would result in %v (%v)\n", checkLetters, rotated, rotatedRightCount)
 			}
 			letters = checkLetters
 		case "reverse":
@@ -130,13 +161,15 @@ func ProcessDay21Instructions(toScramble string, instructions []*Day21Instructio
 			*/
 			letters = MoveLetter(letters, instr.PosX, instr.PosY)
 		}
+		partials[idx] = make([]string, len(letters))
+		copy(partials[idx], letters)
 	}
 
 	result := ""
 	for i := 0; i < len(letters); i++ {
 		result += letters[i]
 	}
-	return result
+	return result, partials
 }
 
 func RotateB(letters []string, letter string) ([]string, int) {
