@@ -27,7 +27,8 @@ func main() {
 	//adventofcode.Day17()
 	//adventofcode.Day18()
 	//adventofcode.Day19()
-	adventofcode.Day20()
+	//adventofcode.Day20()
+	adventofcode.Day21()
 
 	fmt.Println("\nComplete")
 }
