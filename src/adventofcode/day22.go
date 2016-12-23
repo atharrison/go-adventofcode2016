@@ -17,8 +17,8 @@ var ZeroPoint *Point
 
 func Day22() {
 	day := "22"
-	filename := fmt.Sprintf("data/day%vinput.txt", day)
-	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
+	//filename := fmt.Sprintf("data/day%vinput.txt", day)
+	filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
 	input := readFileAsLines(filename)
 
 	firstLine := true
@@ -77,8 +77,9 @@ lineLoop:
 	fmt.Printf("Goal starting at %v\n", goalPos)
 
 	cluster = &GridComputerCluster{
-		Grid: grid,
-		Goal: goalPos,
+		Grid:      grid,
+		Goal:      goalPos,
+		MoveCount: 0,
 	}
 
 	foundBest := false
@@ -90,15 +91,15 @@ lineLoop:
 	fmt.Println("Starting BFS...\n")
 	for len(possibleClusters) > 0 {
 		nextCluster := possibleClusters[0]
-		//nextCluster.PrintCluster()
+		nextCluster.PrintCluster()
 		checks++
 		possibleClusters = possibleClusters[1:]
 		newClusters := nextCluster.Permutations()
-		//if checks > 3 {
+		//if checks > 4 {
 		//	os.Exit(1)
 		//}
 
-		fmt.Printf("(%v)(%v)(%v)(%v) Goal now at [%v,%v] moves: %v, score: %v                  \r",
+		fmt.Printf("(%v)(%v)(%v)(%v) Goal now at [%v,%v] moves: %v, score: %v                  \n",
 			checks, len(seenClusterHash), best, len(possibleClusters), nextCluster.Goal.x, nextCluster.Goal.y,
 			nextCluster.MoveCount, nextCluster.Score())
 		for _, cluster := range newClusters {
@@ -200,7 +201,7 @@ func (gcc *GridComputerCluster) PrintCluster() {
 		fmt.Printf("----")
 	}
 	fmt.Println("---^")
-	fmt.Printf("Open Count: %v\n", openCount)
+	fmt.Printf("Open Count: %v, Move Count: %v, Score: %v\n", openCount, gcc.MoveCount, gcc.Score())
 }
 
 type GridPair struct {
