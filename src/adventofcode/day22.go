@@ -12,6 +12,20 @@ import (
 
 var maxX int
 var maxY int
+var bestGoalReached int
+
+/*
+ Note:
+ Solving via a spreadsheet,
+   * starting at 24,22
+   * going around the barrier that extends from the right wall to  9,12
+   * going up to the Goal, at 27,0  (60 moves ideally. The algorithm achieves this.)
+   * Cycling, 5 moves to move the goal 1 space left, gets Goal to 1,0 in 210 moves.
+   * on move 211, Goal moves into 0,0.
+
+   * The algorithm and visualizations helped, but I was not able to get the simulation to result
+   * in anything less than 213 moves, at the point that I switched to sketching in a spreadsheet.
+*/
 
 var ZeroPoint *Point
 var InflectionPoint *Point
@@ -46,6 +60,7 @@ lineLoop:
 	maxX++
 	maxY++
 	ZeroPoint = &Point{x: 0, y: 0}
+	bestGoalReached = 999
 
 	// Part 1:
 	validNodeCount := 0
@@ -100,8 +115,9 @@ lineLoop:
 		//	os.Exit(1)
 		//}
 
-		fmt.Printf("(%v)(%v)(%v)(%v) Goal now at [%v,%v] moves: %v, score: %v                  \n",
-			checks, len(seenClusterHash), best, len(possibleClusters), nextCluster.Goal.x, nextCluster.Goal.y,
+		fmt.Printf("(%v)(%v)(%v)(%v)(%v) Goal now at [%v,%v] moves: %v, score: %v                  \n",
+			checks, len(seenClusterHash), best, len(possibleClusters), bestGoalReached,
+			nextCluster.Goal.x, nextCluster.Goal.y,
 			nextCluster.MoveCount, nextCluster.Score())
 		for _, cluster := range newClusters {
 			//fmt.Printf("(%v)New Cluster:\n", len(possibleClusters))
@@ -283,6 +299,9 @@ func (gcc *GridComputerCluster) MoveData(pair *GridPair) *GridComputerCluster {
 	if gcc.Goal.x == fromGc.Loc.x && gcc.Goal.y == fromGc.Loc.y {
 		// Also indicate that we reached the goal, so we can change score weights
 		gcc.goalReached = true
+		if bestGoalReached > gcc.MoveCount {
+			bestGoalReached = gcc.MoveCount
+		}
 
 		goal = &Point{
 			x: toGc.Loc.x,
