@@ -14,11 +14,12 @@ var maxX int
 var maxY int
 
 var ZeroPoint *Point
+var InflectionPoint *Point
 
 func Day22() {
 	day := "22"
-	//filename := fmt.Sprintf("data/day%vinput.txt", day)
-	filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
+	filename := fmt.Sprintf("data/day%vinput.txt", day)
+	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
 	input := readFileAsLines(filename)
 
 	firstLine := true
@@ -120,8 +121,10 @@ lineLoop:
 					if !foundBest || cluster.MoveCount < best {
 						possibleClusters = append(possibleClusters, cluster)
 						seenClusterHash[cluster.Hash()] = true
-					} // else this is not as good as a found best, drop it.
-
+					} else {
+						// else this is not as good as a found best, drop it.
+						seenClusterHash[cluster.Hash()] = true
+					}
 				} else {
 					//fmt.Printf("Already seen %v\n", cluster.Hash())
 				}
@@ -315,31 +318,137 @@ type GridComputerCluster struct {
 func (gcc *GridComputerCluster) Score() int {
 	// Lowest score best. Sort will order lowest to highest.
 
-	//Find the closest 'FromGC' point, and use that distance in the score.
-	dist := 9999
-	moveWeight := 3
-	for _, pair := range gcc.CanBeMovedPairs() {
-		zeroPointWeight := 1
-		goalWeight := 1
+	optimization := 4
+	// Less optimized, but right?
+	switch {
+	case optimization == 1:
+		//Find the closest 'FromGC' point, and use that distance in the score.
+		dist := 9999
+		for _, pair := range gcc.CanBeMovedPairs() {
+			zeroPointWeight := 1
+			if pair.A.y > 11 {
+				zeroPointWeight = 10
+			}
+			if gcc.goalReached {
+				zeroPointWeight = 9
+			}
+			nextScore := zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
+			nextScore += 7 * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
+			if nextScore < dist {
+				dist = nextScore
+			}
+		}
+		//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
+		return dist + 3*gcc.MoveCount
+	case optimization == 2:
 
-		if pair.A.y > 11 {
-			zeroPointWeight = 10
+		// More optimized, but wrong? 213
+		//Find the closest 'FromGC' point, and use that distance in the score.
+		dist := 9999
+		moveWeight := 3
+		for _, pair := range gcc.CanBeMovedPairs() {
+			zeroPointWeight := 1
+			goalWeight := 1
+
+			if pair.A.y > 11 {
+				zeroPointWeight = 10
+			}
+			if gcc.goalReached {
+				zeroPointWeight = 5 // trend toward zero
+				goalWeight = 8      // stick close to goal
+				moveWeight = 1
+			} else {
+				goalWeight = 7
+			}
+			nextScore := zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
+			nextScore += goalWeight * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
+			if nextScore < dist {
+				dist = nextScore
+			}
 		}
-		if gcc.goalReached {
-			zeroPointWeight = 5 // trend toward zero
-			goalWeight = 8      // stick close to goal
-			moveWeight = 1
-		} else {
-			goalWeight = 7
+		//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
+		return dist + moveWeight*gcc.MoveCount
+	case optimization == 3:
+		InflectionPoint = &Point{x: 8, y: 13}
+		// 213
+		//Find the closest 'FromGC' point, and use that distance in the score.
+		dist := 9999
+		moveWeight := 3
+		for _, pair := range gcc.CanBeMovedPairs() {
+			zeroPointWeight := 0
+			goalWeight := 0
+			inflectionPointWeight := 0
+			nextScore := 0
+
+			if pair.A.y > InflectionPoint.y && pair.A.x > InflectionPoint.x {
+				zeroPointWeight = 0
+				goalWeight = 0
+				inflectionPointWeight = 200
+				moveWeight = 3
+			} else if gcc.goalReached {
+				zeroPointWeight = 5 // trend toward zero
+				goalWeight = 20     // stick close to goal
+				inflectionPointWeight = 0
+				moveWeight = 1
+				if pair.A.y > 1 || gcc.Goal.y > 1 {
+					nextScore += 10000
+				}
+			} else {
+				zeroPointWeight = 0
+				goalWeight = 30
+				inflectionPointWeight = 0
+				moveWeight = 2
+			}
+
+			nextScore += zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
+			nextScore += inflectionPointWeight * pair.A.DistanceBetween(InflectionPoint)
+			nextScore += goalWeight * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
+			if nextScore < dist {
+				dist = nextScore
+			}
 		}
-		nextScore := zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
-		nextScore += goalWeight * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
-		if nextScore < dist {
-			dist = nextScore
+		//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
+		return dist + moveWeight*gcc.MoveCount
+	case optimization == 4:
+		InflectionPoint = &Point{x: 8, y: 11}
+		//Find the closest 'FromGC' point, and use that distance in the score.
+		dist := 9999
+		moveWeight := 3
+		for _, pair := range gcc.CanBeMovedPairs() {
+			zeroPointWeight := 0
+			goalWeight := 0
+			inflectionPointWeight := 0
+
+			if pair.A.y > InflectionPoint.y && pair.A.x > InflectionPoint.x {
+				zeroPointWeight = 0
+				goalWeight = 0
+				inflectionPointWeight = 500
+				moveWeight = 10
+			} else if gcc.goalReached {
+				zeroPointWeight = 5 // trend toward zero
+				goalWeight = 20     // stick close to goal
+				inflectionPointWeight = 0
+				moveWeight = 1
+			} else {
+				zeroPointWeight = 0
+				goalWeight = 30
+				inflectionPointWeight = 0
+				moveWeight = 5
+			}
+
+			nextScore := zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
+			nextScore += inflectionPointWeight * pair.A.DistanceBetween(InflectionPoint)
+			nextScore += goalWeight * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
+			if nextScore < dist {
+				dist = nextScore
+			}
 		}
+		//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
+		return dist + moveWeight*gcc.MoveCount
+
+	default:
+		return 9999 //We won't get here
 	}
-	//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
-	return dist + moveWeight*gcc.MoveCount
 
 	// Old: Add scores of all points that can be moved
 	//score := 0
