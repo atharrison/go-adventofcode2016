@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	//"os"
+	"os"
 )
 
 func Day23() {
@@ -41,19 +42,14 @@ func Day23() {
 func RunABComputer(comp *ABComputer, instructions []*ABInstr) {
 
 	ptr := 0
-	//count := 0
-	for ptr < len(instructions) {
+	for ptr >= 0 && ptr < len(instructions) {
 		ptr = ProcessInstruction(comp, instructions[ptr], ptr, instructions)
-		//count++
-		//if count > 10 {
-		//	os.Exit(1)
-		//}
 	}
 }
 
 func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int, instructions []*ABInstr) int {
 	//Ha! Best optimization is simply not to print every line of execution
-	fmt.Printf("[%v] Instr: %v, Comp: %v       \r", ptr, instr, comp)
+	fmt.Printf("[%v] Instr: %v, Comp: %v       \n", ptr, instr, comp)
 	switch instr.Name {
 	case "cpy":
 		val := GetValueForInstr(instr.XVal, comp)
@@ -91,13 +87,23 @@ func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int, instructions 
 		val := GetValueForInstr(instr.YVal, comp)
 		comp.Registers[instr.XVal] -= val
 		ptr += 1
+	case "mtp":
+		// Multiply YVal and ZVal, and add it to XVal
+		oper1 := GetValueForInstr(instr.YVal, comp)
+		oper2 := GetValueForInstr(instr.ZVal, comp)
+		comp.Registers[instr.XVal] += oper1 * oper2
+		ptr += 1
+	case "noop":
+		//Do nothing
+		ptr += 1
 	}
+
 	return ptr
 }
 
 func ToggleInstruction(ptr int, instructions []*ABInstr) {
 	if ptr >= len(instructions) {
-		fmt.Printf("Toggle NOOP, beyond instr tape")
+		fmt.Printf("Toggle NOOP, beyond instr tape\n")
 		return
 	}
 	instrToToggle := instructions[ptr]
@@ -130,7 +136,18 @@ func ToggleInstruction(ptr int, instructions []*ABInstr) {
 			XVal: instrToToggle.XVal,
 			YVal: instrToToggle.YVal,
 		}
+	case "mtp":
+		// Doh, toggle bites us...
+		fmt.Printf("Toggle trying to toggle %v", instructions[ptr])
+		os.Exit(1)
+	case "noop":
+		// NOTE: Since Toggle might want to modify an instr we optimized out,
+		// We need to insert NOOP type instructions in those places.
+		// But if toggle would try to toggle those, then things would get screwy.
+		fmt.Printf("Toggle trying to toggle %v", instructions[ptr])
+		os.Exit(1)
 	}
+
 	//fmt.Printf("Toggling %v to %v\n", instrToToggle, instructions[ptr])
 }
 
@@ -155,15 +172,23 @@ type ABInstr struct {
 	Name string
 	XVal string
 	YVal string
+	ZVal string
 }
 
 func (i *ABInstr) String() string {
-	return fmt.Sprintf("%v %v %v", i.Name, i.XVal, i.YVal)
+	return fmt.Sprintf("%v %v %v %v", i.Name, i.XVal, i.YVal, i.ZVal)
 }
 
 func NewABInstr(line string) *ABInstr {
 	tokens := strings.Split(line, " ")
 	switch tokens[0] {
+	case "mtp":
+		return &ABInstr{
+			Name: tokens[0],
+			XVal: tokens[1],
+			YVal: tokens[2],
+			ZVal: tokens[3],
+		}
 	case "cpy", "jnz":
 		return &ABInstr{
 			Name: tokens[0],
@@ -174,6 +199,10 @@ func NewABInstr(line string) *ABInstr {
 		return &ABInstr{
 			Name: tokens[0],
 			XVal: tokens[1],
+		}
+	case "noop":
+		return &ABInstr{
+			Name: tokens[0],
 		}
 	default:
 		panic("Unhandled instruction")
