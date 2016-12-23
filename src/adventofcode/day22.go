@@ -90,7 +90,7 @@ lineLoop:
 	fmt.Println("Starting BFS...\n")
 	for len(possibleClusters) > 0 {
 		nextCluster := possibleClusters[0]
-		nextCluster.PrintCluster()
+		//nextCluster.PrintCluster()
 		checks++
 		possibleClusters = possibleClusters[1:]
 		newClusters := nextCluster.Permutations()
@@ -277,7 +277,9 @@ func (gcc *GridComputerCluster) MoveData(pair *GridPair) *GridComputerCluster {
 	// Adjust goal, if we moved data from the Goal
 	var goal *Point
 	if gcc.Goal.x == fromGc.Loc.x && gcc.Goal.y == fromGc.Loc.y {
+		// Also indicate that we reached the goal, so we can change score weights
 		gcc.goalReached = true
+
 		goal = &Point{
 			x: toGc.Loc.x,
 			y: toGc.Loc.y,
@@ -314,22 +316,29 @@ func (gcc *GridComputerCluster) Score() int {
 
 	//Find the closest 'FromGC' point, and use that distance in the score.
 	dist := 9999
+	moveWeight := 3
 	for _, pair := range gcc.CanBeMovedPairs() {
 		zeroPointWeight := 1
+		goalWeight := 1
+
 		if pair.A.y > 11 {
 			zeroPointWeight = 10
 		}
 		if gcc.goalReached {
-			zeroPointWeight = 9
+			zeroPointWeight = 5 // trend toward zero
+			goalWeight = 8      // stick close to goal
+			moveWeight = 1
+		} else {
+			goalWeight = 7
 		}
 		nextScore := zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
-		nextScore += 7 * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
+		nextScore += goalWeight * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
 		if nextScore < dist {
 			dist = nextScore
 		}
 	}
 	//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
-	return dist + 3*gcc.MoveCount
+	return dist + moveWeight*gcc.MoveCount
 
 	// Old: Add scores of all points that can be moved
 	//score := 0
