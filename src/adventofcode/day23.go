@@ -11,7 +11,8 @@ func Day23() {
 	day := "23"
 	//filename := fmt.Sprintf("data/day%vinput_sample2.txt", day)
 	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
-	filename := fmt.Sprintf("data/day%vinput.txt", day)
+	//filename := fmt.Sprintf("data/day%vinput.txt", day)
+	filename := fmt.Sprintf("data/day%vinput_handoptimized2.txt", day)
 	input := readFileAsLines(filename)
 
 	instructions := []*ABInstr{}
@@ -27,8 +28,8 @@ func Day23() {
 
 	comp := &ABComputer{
 		Registers: map[string]int{
-			"a": 7, "b": 0, "c": 0, "d": 0, // Part 1
-			//"a": 0, "b": 0, "c": 1, "d": 0, // Part 2
+			//"a": 7, "b": 0, "c": 0, "d": 0, // Part 1
+			"a": 12, "b": 0, "c": 1, "d": 0, // Part 2
 		},
 	}
 
@@ -79,6 +80,16 @@ func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int, instructions 
 	case "tgl":
 		val := GetValueForInstr(instr.XVal, comp)
 		ToggleInstruction(ptr+val, instructions)
+		ptr += 1
+
+	// New optimized instructions:
+	case "incv":
+		val := GetValueForInstr(instr.YVal, comp)
+		comp.Registers[instr.XVal] += val
+		ptr += 1
+	case "decv":
+		val := GetValueForInstr(instr.YVal, comp)
+		comp.Registers[instr.XVal] -= val
 		ptr += 1
 	}
 	return ptr
