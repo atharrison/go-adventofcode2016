@@ -3,6 +3,8 @@ package adventofcode
 import (
 	"crypto/md5"
 	"fmt"
+	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,10 +13,12 @@ import (
 var maxX int
 var maxY int
 
+var ZeroPoint *Point
+
 func Day22() {
 	day := "22"
-	//filename := fmt.Sprintf("data/day%vinput.txt", day)
-	filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
+	filename := fmt.Sprintf("data/day%vinput.txt", day)
+	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
 	input := readFileAsLines(filename)
 
 	firstLine := true
@@ -29,17 +33,18 @@ lineLoop:
 		//fmt.Printf("Line: %v\n", line)
 		gc := NewGridComputer(line)
 		gridArray = append(gridArray, gc)
-		if maxX < gc.Xpos {
-			maxX = gc.Xpos
+		if maxX < gc.Loc.x {
+			maxX = gc.Loc.x
 		}
-		if maxY < gc.Ypos {
-			maxY = gc.Ypos
+		if maxY < gc.Loc.y {
+			maxY = gc.Loc.y
 		}
 		fmt.Println(gc.String())
 	}
-	//Max vals are based on 0-based values. Incr to reflect actual
+	//Max vals are based on 0-based values. Incr to reflect actual max
 	maxX++
 	maxY++
+	ZeroPoint = &Point{x: 0, y: 0}
 
 	// Part 1:
 	validNodeCount := 0
@@ -63,12 +68,13 @@ lineLoop:
 	fmt.Printf("MaxX: %v, MaxY: %v\n", maxX, maxY)
 	grid = NewEmptyGrid()
 	for _, gc := range gridArray {
-		fmt.Printf("Putting %v at %v, %v\n", gc, gc.Xpos, gc.Ypos)
-		grid[gc.Ypos][gc.Xpos] = gc
+		fmt.Printf("Putting %v at %v, %v\n", gc, gc.Loc.x, gc.Loc.y)
+		grid[gc.Loc.y][gc.Loc.x] = gc
 	}
 
 	//fmt.Printf("%v\n", grid)
-	goalPos := NewPoint(0, maxY-1)
+	goalPos := NewPoint(maxX-1, 0)
+	fmt.Printf("Goal starting at %v\n", goalPos)
 
 	cluster = &GridComputerCluster{
 		Grid: grid,
@@ -84,34 +90,46 @@ lineLoop:
 	fmt.Println("Starting BFS...\n")
 	for len(possibleClusters) > 0 {
 		nextCluster := possibleClusters[0]
+		nextCluster.PrintCluster()
 		checks++
-		possibleClusters := possibleClusters[1:]
+		possibleClusters = possibleClusters[1:]
 		newClusters := nextCluster.Permutations()
+		//if checks > 3 {
+		//	os.Exit(1)
+		//}
 
-		fmt.Printf("(%v)(%v)(%v) Goal now at [%v,%v] moves: %v                  \r", checks, best, len(possibleClusters), nextCluster.Goal.x, nextCluster.Goal.y, nextCluster.Goal.moveCount)
+		fmt.Printf("(%v)(%v)(%v)(%v) Goal now at [%v,%v] moves: %v, score: %v                  \r",
+			checks, len(seenClusterHash), best, len(possibleClusters), nextCluster.Goal.x, nextCluster.Goal.y,
+			nextCluster.MoveCount, nextCluster.Score())
 		for _, cluster := range newClusters {
+			//fmt.Printf("(%v)New Cluster:\n", len(possibleClusters))
+			//cluster.PrintCluster()
+
 			if cluster.Goal.x == 0 && cluster.Goal.y == 0 {
-				if !foundBest || best > cluster.Goal.moveCount {
-					fmt.Printf("NewBest! %v\n", cluster.Goal.moveCount)
-					best = cluster.Goal.moveCount
+				if !foundBest || best > cluster.MoveCount {
+					fmt.Printf("\nNewBest! %v\n", cluster.MoveCount)
+					//os.Exit(1)
+					best = cluster.MoveCount
+					foundBest = true
+					//os.Exit(1)
 				}
 			} else {
 				if _, ok := seenClusterHash[cluster.Hash()]; !ok {
-					possibleClusters = append(possibleClusters, cluster)
-					seenClusterHash[cluster.Hash()] = true
+					//fmt.Printf("Appending new cluster %v=%v\n", cluster.Score(), cluster.Hash())
+					if !foundBest || cluster.MoveCount < best {
+						possibleClusters = append(possibleClusters, cluster)
+						seenClusterHash[cluster.Hash()] = true
+					} // else this is not as good as a found best, drop it.
+
 				} else {
-					fmt.Printf("Already seen %v\n", cluster.Hash())
+					//fmt.Printf("Already seen %v\n", cluster.Hash())
 				}
-				//perms := nextCluster.Permutations()
-				//fmt.Printf("Next cluster has %v possible permutations\n", len(perms))
-				//for _, c := range perms {
-				//
-				//}
 			}
 		}
 		sort.Sort(possibleClusters)
 	}
-	fmt.Printf("(%v)(%v) Done with BFS\n", checks, best)
+	fmt.Printf("\n(%v)(%v) Done with BFS\n", checks, best)
+	fmt.Printf("Best: %v\n", best)
 }
 
 func NewEmptyGrid() [][]*GridComputer {
@@ -124,16 +142,20 @@ func NewEmptyGrid() [][]*GridComputer {
 }
 
 func (gcc *GridComputerCluster) CanBeMovedPairs() []*GridPair {
+	if len(gcc.canBeMoved) > 0 {
+		return gcc.canBeMoved
+	}
 	canBeMoved := []*GridPair{}
 	for y := 0; y < len(gcc.Grid); y++ {
 		for x := 0; x < len(gcc.Grid[0]); x++ {
 			gc := gcc.Grid[y][x]
-			gcPoint := &Point{x: gc.Xpos, y: gc.Ypos}
+			gcPoint := gc.Loc
 			if gc.Used > 0 { // Can't move empty data!
 				moves := MovesForPoint(x, y)
 				for _, move := range moves {
 					toGc := gcc.Grid[move.y][move.x]
-					if toGc.HasSpaceFor(gc) {
+					if toGc.HasSpaceFor(gc, gcc.Goal) {
+						//fmt.Printf("%v has space for %v\n", toGc, gc)
 						canBeMoved = append(canBeMoved, &GridPair{
 							A: gcPoint,
 							B: move,
@@ -144,7 +166,41 @@ func (gcc *GridComputerCluster) CanBeMovedPairs() []*GridPair {
 		}
 	}
 	//fmt.Printf("CanBeMoved: %v\n", canBeMoved)
+	gcc.canBeMoved = canBeMoved
 	return canBeMoved
+}
+
+func (gcc *GridComputerCluster) PrintCluster() {
+	openCount := 0
+	fmt.Printf("v---")
+	for i := 0; i < maxX-2; i++ {
+		fmt.Printf("----")
+	}
+	fmt.Println("---v")
+	for y := 0; y < maxY; y++ {
+		for x := 0; x < maxX; x++ {
+			gc := gcc.Grid[y][x]
+			if gc.Loc.Equals(gcc.Goal) {
+				fmt.Printf(" G  ")
+			} else if gc.Loc.x == 0 && gc.Loc.y == 0 {
+				aChar, uChar := gc.AvailUsedCharacters()
+				fmt.Printf("(%v%v)", string(aChar), string(uChar))
+			} else if gc.Used == 0 {
+				fmt.Printf(" -- ")
+				openCount++
+			} else {
+				aChar, uChar := gc.AvailUsedCharacters()
+				fmt.Printf(" %s%s ", string(aChar), string(uChar))
+			}
+		}
+		fmt.Println()
+	}
+	fmt.Printf("^---")
+	for i := 0; i < maxX-2; i++ {
+		fmt.Printf("----")
+	}
+	fmt.Println("---^")
+	fmt.Printf("Open Count: %v\n", openCount)
 }
 
 type GridPair struct {
@@ -193,7 +249,7 @@ func (gcc *GridComputerCluster) Permutations() []*GridComputerCluster {
 
 func (gcc *GridComputerCluster) MoveData(pair *GridPair) *GridComputerCluster {
 
-	fmt.Printf("Moving data from %v to %v\n", pair.A, pair.B)
+	//fmt.Printf("Moving data from %v to %v\n", pair.A, pair.B)
 	newGrid := NewEmptyGrid()
 	for y := 0; y < maxY; y++ {
 		for x := 0; x < maxX; x++ {
@@ -202,43 +258,87 @@ func (gcc *GridComputerCluster) MoveData(pair *GridPair) *GridComputerCluster {
 		}
 	}
 
-	fromGc := gcc.Grid[pair.A.y][pair.A.x]
-	toGc := gcc.Grid[pair.B.y][pair.B.x]
+	fromGc := newGrid[pair.A.y][pair.A.x]
+	toGc := newGrid[pair.B.y][pair.B.x]
 
 	// Move actual data:
+	//fmt.Printf("Moving from %v to %v\n", fromGc, toGc)
 	toGc.Avail -= fromGc.Used
+	toGc.Used += fromGc.Used
+	fromGc.Avail += fromGc.Used
 	fromGc.Used = 0
+	//fmt.Printf("From now %v, To now %v\n", fromGc, toGc)
+
+	if toGc.Avail < 0 {
+		fmt.Printf("WTF? from: %v, to: %v, Grid:%v\n", fromGc, toGc, newGrid)
+		os.Exit(1)
+	}
 
 	// Adjust goal, if we moved data from the Goal
 	var goal *Point
-	if gcc.Goal.x == fromGc.Xpos && gcc.Goal.y == fromGc.Ypos {
+	if gcc.Goal.x == fromGc.Loc.x && gcc.Goal.y == fromGc.Loc.y {
+		gcc.goalReached = true
 		goal = &Point{
-			x:         toGc.Xpos,
-			y:         toGc.Ypos,
-			moveCount: gcc.Goal.moveCount + 1,
+			x: toGc.Loc.x,
+			y: toGc.Loc.y,
 		}
-
+		//fmt.Printf("Adjusting Goal location to %v\n", goal)
 	} else {
-		goal = gcc.Goal
+		goal = &Point{
+			x: gcc.Goal.x,
+			y: gcc.Goal.y,
+		}
 	}
 
 	return &GridComputerCluster{
-		Grid: newGrid,
-		Goal: goal,
+		Grid:        newGrid,
+		Goal:        goal,
+		MoveCount:   gcc.MoveCount + 1,
+		goalReached: gcc.goalReached,
 	}
 }
 
 type GridComputerClusters []*GridComputerCluster
 
 type GridComputerCluster struct {
-	Grid      [][]*GridComputer
-	Goal      *Point
-	hashValue string
+	Grid        [][]*GridComputer
+	Goal        *Point
+	canBeMoved  []*GridPair
+	MoveCount   int
+	hashValue   string
+	goalReached bool
 }
 
 func (gcc *GridComputerCluster) Score() int {
-	// Lowest score best?
-	return gcc.Goal.y + gcc.Goal.moveCount
+	// Lowest score best. Sort will order lowest to highest.
+
+	//Find the closest 'FromGC' point, and use that distance in the score.
+	dist := 9999
+	for _, pair := range gcc.CanBeMovedPairs() {
+		zeroPointWeight := 1
+		if pair.A.y > 11 {
+			zeroPointWeight = 10
+		}
+		if gcc.goalReached {
+			zeroPointWeight = 9
+		}
+		nextScore := zeroPointWeight * pair.A.DistanceBetween(ZeroPoint)
+		nextScore += 7 * pair.A.DistanceBetween(gcc.Goal) // Make it hone in on Goal first
+		if nextScore < dist {
+			dist = nextScore
+		}
+	}
+	//fmt.Printf("Calculated score for %v as %d\n", gcc.Hash(), dist+gcc.MoveCount)
+	return dist + 3*gcc.MoveCount
+
+	// Old: Add scores of all points that can be moved
+	//score := 0
+	//for _, pair := range gcc.CanBeMovedPairs() {
+	//	score += pair.A.DistanceBetween(ZeroPoint)
+	//	score += pair.A.DistanceBetween(gcc.Goal)
+	//}
+
+	//return score + gcc.Goal.moveCount
 }
 
 func (gcc *GridComputerCluster) String() string {
@@ -267,44 +367,88 @@ func (p GridComputerClusters) Less(i, j int) bool {
 func (p GridComputerClusters) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
 type Point struct {
-	x         int
-	y         int
-	moveCount int
+	x int
+	y int
 }
 
 func (p *Point) String() string {
-	return fmt.Sprintf("[%v,%v](%v)", p.x, p.y, p.moveCount)
+	return fmt.Sprintf("[%v,%v]", p.x, p.y)
+}
+
+func (p *Point) DistanceBetween(other *Point) int {
+	xDist := p.x - other.x
+	yDist := p.y - other.y
+	return int(math.Abs(float64(xDist)) + math.Abs(float64(yDist)))
+}
+
+func (p *Point) Equals(other *Point) bool {
+	return p.x == other.x && p.y == other.y
 }
 
 func NewPoint(x int, y int) *Point {
-	return &Point{x: x, y: y, moveCount: 0}
+	return &Point{x: x, y: y}
 }
 
 type GridComputers []*GridComputer
 
 type GridComputer struct {
-	Xpos  int
-	Ypos  int
+	Loc   *Point
 	Used  int
 	Avail int
 }
 
-func (gc *GridComputer) Equals(other *GridComputer) bool {
-	return gc.Xpos == other.Xpos && gc.Ypos == other.Ypos
+func (gc *GridComputer) AvailUsedCharacters() (rune, rune) {
+	a := gc.Avail
+	u := gc.Used
+	var aChar rune
+	var uChar rune
+	switch {
+	case a < 10:
+		aChar = '.'
+	case a >= 10 && a < 20:
+		aChar = 'a'
+	case a >= 20 && a < 30:
+		aChar = 'A'
+	case a >= 30:
+		aChar = '@'
+	}
+	switch {
+	case u < 25:
+		uChar = '.'
+	case u >= 25 && u < 75:
+		uChar = 'o'
+	case u >= 75 && u < 100:
+		uChar = 'U'
+	case u >= 100:
+		uChar = '#'
+	}
+	return aChar, uChar
 }
 
-func (gc *GridComputer) HasSpaceFor(other *GridComputer) bool {
-	return gc.Avail >= other.Used
+func (gc *GridComputer) Equals(other *GridComputer) bool {
+	return gc.Loc.Equals(other.Loc)
+}
+
+func (gc *GridComputer) HasSpaceFor(other *GridComputer, goal *Point) bool {
+	if other.Loc.x == goal.x && other.Loc.y == goal.y {
+		// There must be room for all of it, if we're moving the Goal data
+		//fmt.Printf("Trying to move Goal Data. Can we? %v\n", gc.Used == 0)
+		return gc.Used == 0
+	} else {
+		return gc.Avail >= other.Used
+	}
 }
 
 func (gc *GridComputer) String() string {
-	return fmt.Sprintf("[x%v-y%v]\tU: %v\tA: %v", gc.Xpos, gc.Ypos, gc.Used, gc.Avail)
+	return fmt.Sprintf("[x%v-y%v]\tU: %v\tA: %v", gc.Loc.x, gc.Loc.y, gc.Used, gc.Avail)
 }
 
 func (gc *GridComputer) Copy() *GridComputer {
 	return &GridComputer{
-		Xpos:  gc.Xpos,
-		Ypos:  gc.Ypos,
+		Loc: &Point{
+			x: gc.Loc.x,
+			y: gc.Loc.y,
+		},
 		Used:  gc.Used,
 		Avail: gc.Avail,
 	}
@@ -334,8 +478,10 @@ func NewGridComputer(line string) *GridComputer {
 	Used, _ := strconv.Atoi(nonEmptyTokens[2][0 : len(nonEmptyTokens[2])-1])
 	Avail, _ := strconv.Atoi(nonEmptyTokens[3][0 : len(nonEmptyTokens[3])-1])
 	return &GridComputer{
-		Xpos:  Xpos,
-		Ypos:  Ypos,
+		Loc: &Point{
+			x: Xpos,
+			y: Ypos,
+		},
 		Used:  Used,
 		Avail: Avail,
 	}
