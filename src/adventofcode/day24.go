@@ -305,3 +305,235 @@ func (p *DuctPoint) DistanceToRobot(r *DuctRobot) int {
 	yDist := p.Y - r.Y
 	return int(math.Abs(float64(xDist)) + math.Abs(float64(yDist)))
 }
+
+/////////////////////////////////////////////////////////
+/*
+New tactic: Find distances from each point a,b. Then solve the Traveling Salesman problem for those points/distances.
+
+Copy 'WalkFloor()' from Day13, but plug in the duct map from Day 24, and provide start points.
+*/
+
+func Day24Alt() {
+	day := "24"
+	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
+	filename := fmt.Sprintf("data/day%vinput.txt", day)
+	input := readFileAsLines(filename)
+
+	robotsSeenHash = make(map[string]bool)
+
+	DuctGoals = make(map[int]*DuctPoint)
+
+	ductWidth = len(input[0])
+	ductHeight = len(input)
+	ductMapStrings := make([][]string, ductHeight)
+
+	fmt.Printf("Height: %v, Width: %v\n", ductHeight, ductWidth)
+	for y, line := range input {
+		fmt.Printf("Line: %v\n", line)
+		ductMapStrings[y] = make([]string, ductWidth)
+		for x, c := range line {
+
+			if c == '0' || isGoalPoint(c) {
+				goalInt, _ := strconv.Atoi(string(c))
+				DuctGoals[goalInt] = &DuctPoint{X: x, Y: y, T: c}
+				c = '.'
+				// 'Start Point' will be DuctGoals[0]
+			}
+
+			ductMapStrings[y][x] = string(c)
+		}
+	}
+
+	fmt.Printf("Goals: %v\n", DuctGoals)
+
+	GoalDistances := make([][]int, len(DuctGoals))
+	for i := 0; i < len(DuctGoals); i++ {
+		GoalDistances[i] = make([]int, len(DuctGoals))
+	}
+
+	fmt.Printf("%v\n", ductMap)
+	for a, p1 := range DuctGoals {
+		for b := a + 1; b < len(DuctGoals); b++ {
+			p2 := DuctGoals[b]
+
+			dist := WalkDuctMap(ductMapStrings, p1.X, p1.Y, p2.X, p2.Y)
+			fmt.Printf("Processed Goal %v -> Goal %v Dist: %v\n", p1, p2, dist)
+			GoalDistances[a][b] = dist
+			GoalDistances[b][a] = dist
+		}
+	}
+
+	fmt.Printf("GoalDistances:\n%v\n", GoalDistances)
+	fmt.Println("   0\t1\t2\t3\t4\t5\t6\t7")
+	for a := 0; a < len(DuctGoals); a++ {
+		fmt.Printf("%v: ", a)
+		for b := 0; b < len(DuctGoals); b++ {
+			fmt.Printf("%v\t", GoalDistances[a][b])
+		}
+		fmt.Println()
+	}
+
+	//Now, we have distances from each point to each other point.
+	//Solve the traveling salesman problem, starting at 0, touching every other point, but not returning to 0.
+	//Smallest distance will be our answer.
+
+	shortestDistance, shortestPath := SolveModifiedTraveler(GoalDistances)
+	fmt.Printf("Shortest distance: %v, Path: %v\n", shortestDistance, shortestPath)
+}
+
+func SolveModifiedTraveler(distances [][]int) (int, *TravelerPath) {
+
+	numGoals := len(distances[0])
+	bestDist := 9999
+	var bestPath *TravelerPath
+
+	travelerPath := &TravelerPath{
+		Reached:   []int{0},
+		TotalDist: 0,
+	}
+
+	traveledPaths := TraveledPaths{travelerPath}
+
+	checks := 0
+	for len(traveledPaths) > 0 {
+		nextPath := traveledPaths[0]
+		traveledPaths = traveledPaths[1:]
+
+		//if checks > 5 {
+		//	os.Exit(1)
+		//}
+		if len(nextPath.Reached) == numGoals {
+			if nextPath.TotalDist < bestDist {
+				bestDist = nextPath.TotalDist
+				bestPath = nextPath
+			}
+			fmt.Printf("Found best: %v\n", bestDist)
+		} else if nextPath.TotalDist > bestDist {
+			//Too far, bail by not adding combos from here.
+		} else {
+			//Pick next best distance:
+			for b := 1; b < numGoals; b++ {
+				if !nextPath.HasReachedGoal(b) {
+
+					newReached := []int{}
+					for _, j := range nextPath.Reached {
+						newReached = append(newReached, j)
+					}
+					newReached = append(newReached, b)
+
+					newPath := &TravelerPath{
+						CurrentLoc: b,
+						Reached:    newReached,
+						TotalDist:  nextPath.TotalDist + distances[nextPath.CurrentLoc][b],
+					}
+
+					traveledPaths = append(traveledPaths, newPath)
+					fmt.Printf("(%v) New Path: %v\n", len(traveledPaths), newPath)
+				}
+			}
+		}
+		sort.Sort(traveledPaths)
+		checks++
+	}
+
+	return bestDist, bestPath
+}
+
+type TraveledPaths []*TravelerPath
+
+func (slice TraveledPaths) Len() int {
+	return len(slice)
+}
+func (slice TraveledPaths) Less(i, j int) bool {
+	return slice[i].TotalDist < slice[j].TotalDist
+}
+func (slice TraveledPaths) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
+type TravelerPath struct {
+	CurrentLoc int
+	Reached    []int
+	TotalDist  int
+}
+
+func (p *TravelerPath) HasReachedGoal(goal int) bool {
+	for _, g := range p.Reached {
+		if g == goal {
+			return true
+		}
+	}
+	return false
+}
+
+func WalkDuctMap(floorplan [][]string, startX, startY, goalX, goalY int) int {
+
+	lowestDist := 9999
+	stepsToProcess := Locations{
+		&Location{
+			X:    startX,
+			Y:    startY,
+			Dist: 0,
+		},
+	}
+
+	var ductTraveledHash = make(map[string]*Location)
+
+	for len(stepsToProcess) > 0 {
+
+		next := stepsToProcess[0]
+		stepsToProcess = stepsToProcess[1:]
+		//fmt.Printf("Best: %v\t ToProcess: %v\tNow at [%v, %v] D:%v    \n", lowestDist, len(stepsToProcess), next.X, next.Y, next.Dist)
+		if next.Dist > lowestDist {
+			continue
+		}
+
+		if next.X == goalX && next.Y == goalY && lowestDist > next.Dist {
+			lowestDist = next.Dist
+			//fmt.Printf("Best Dist now %v\n", lowestDist)
+		}
+
+		for xDelta := -1; xDelta < 2; xDelta++ {
+			if next.X+xDelta < 0 || next.X+xDelta >= ductWidth {
+				continue
+			}
+			for yDelta := -1; yDelta < 2; yDelta++ {
+				if next.Y+yDelta < 0 || next.Y+yDelta >= ductHeight {
+					continue
+				}
+
+				if (xDelta == 0 && yDelta == 0) ||
+					(xDelta == -1 && yDelta == -1) ||
+					(xDelta == -1 && yDelta == 1) ||
+					(xDelta == 1 && yDelta == -1) ||
+					(xDelta == 1 && yDelta == 1) {
+					continue // No diagonals
+				}
+
+				if floorplan[next.Y+yDelta][next.X+xDelta] == "." {
+
+					newLoc := &Location{
+						X:    next.X + xDelta,
+						Y:    next.Y + yDelta,
+						Dist: next.Dist + 1,
+					}
+
+					h := newLoc.Hash()
+					if loc, ok := ductTraveledHash[h]; ok {
+						if loc.Dist > newLoc.Dist {
+							ductTraveledHash[h] = newLoc
+							stepsToProcess = append(stepsToProcess, newLoc)
+						}
+					} else {
+						stepsToProcess = append(stepsToProcess, newLoc)
+						ductTraveledHash[h] = newLoc
+					}
+
+				}
+			}
+		}
+		sort.Sort(stepsToProcess)
+	}
+
+	return lowestDist
+}
