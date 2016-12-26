@@ -403,11 +403,20 @@ func SolveModifiedTraveler(distances [][]int) (int, *TravelerPath) {
 		//	os.Exit(1)
 		//}
 		if len(nextPath.Reached) == numGoals {
-			if nextPath.TotalDist < bestDist {
-				bestDist = nextPath.TotalDist
+			// Part 1
+			//if nextPath.TotalDist < bestDist {
+			//	bestDist = nextPath.TotalDist
+			//	bestPath = nextPath
+			//}
+			//fmt.Printf("Found best: %v\n", bestDist)
+
+			// Part 2
+			nextTotalDist := nextPath.TotalDist + distances[0][nextPath.CurrentLoc]
+			if nextTotalDist < bestDist {
+				bestDist = nextTotalDist
 				bestPath = nextPath
 			}
-			fmt.Printf("Found best: %v\n", bestDist)
+
 		} else if nextPath.TotalDist > bestDist {
 			//Too far, bail by not adding combos from here.
 		} else {
