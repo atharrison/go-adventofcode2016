@@ -17,7 +17,8 @@ var ySize = 6
 
 func Day08() {
 	day := "08"
-	filename := fmt.Sprintf("data/day%vinput.txt", day)
+	filename := fmt.Sprintf("data/day%v_bonus.txt", day)
+	//filename := fmt.Sprintf("data/day%vinput.txt", day)
 	//filename := fmt.Sprintf("data/day%vinput_sample.txt", day)
 	input := readFileAsLines(filename)
 

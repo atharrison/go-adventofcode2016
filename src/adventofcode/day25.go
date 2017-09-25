@@ -13,15 +13,17 @@ var signals []int
 var expectedSignals []int
 
 const maxInstrCount = 1000000
+const maxPart3 = 50000
 
 func Day25() {
 	day := "25"
-	filename := fmt.Sprintf("data/day%vinput_modified.txt", day)
+	filename := fmt.Sprintf("data/day%s_bonus.txt", day)
+	//filename := fmt.Sprintf("data/day%vinput_modified.txt", day)
 	input := readFileAsLines(filename)
 
-	for _, line := range input {
-		fmt.Printf("Line: %v\n", line)
-	}
+	//for _, line := range input {
+	//	fmt.Printf("Line: %v\n", line)
+	//}
 
 	fmt.Printf("%v\n", input)
 
@@ -35,7 +37,7 @@ func Day25() {
 	signals = []int{}
 	expectedSignals = []int{0, 1, 0, 1, 0, 1, 0, 1, 0, 1}
 	for !foundClockSignal {
-		fmt.Printf("Starting ABComputer with clockSignal %v\n", clockSignal)
+		//fmt.Printf("Starting ABComputer with clockSignal %v\n", clockSignal)
 		comp := &ABComputer{
 			Registers: map[string]int{
 				"a": clockSignal, "b": 0, "c": 0, "d": 0, // Part 1
@@ -43,13 +45,14 @@ func Day25() {
 		}
 
 		RunABComputer(comp, instructions)
-		if !foundClockSignal {
-			clockSignal++
-			resetComputer = false
-			signals = []int{}
-		}
+		//
+		//if !foundClockSignal {
+		//	clockSignal++
+		//	resetComputer = false
+		//	signals = []int{}
+		//}
 	}
-	fmt.Printf("ClockSignal is %v\n", clockSignal)
+	//fmt.Printf("ClockSignal is %v\n", clockSignal)
 
 }
 
@@ -113,8 +116,9 @@ func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int, instructions 
 		ptr += 1
 	case "out":
 		val := GetValueForInstr(instr.XVal, comp)
-		fmt.Printf("%v ", val)
-		if len(signals) < len(expectedSignals) {
+		//fmt.Printf("%v ", val)
+		//if len(signals) < len(expectedSignals) {
+		if len(signals) < maxPart3 {
 			signals = append(signals, val)
 		} else {
 
@@ -127,12 +131,23 @@ func ProcessInstruction(comp *ABComputer, instr *ABInstr, ptr int, instructions 
 					foundClockSignal = false
 				}
 			}
-			fmt.Printf("\nSignals: %v as expected? %v\n", signals, foundClockSignal)
+			stringSig := convertToString(signals)
+			//fmt.Printf("\nSignals: %v as expected? %v\n", signals, foundClockSignal)
+			fmt.Printf("\nSignals:\n %v\n\nas expected? %v\n", stringSig, foundClockSignal)
+			foundClockSignal = true
 		}
 		ptr += 1
 	}
 
 	return ptr
+}
+
+func convertToString(signals []int) string {
+	result := ""
+	for _, i := range signals {
+		result = result + string(rune(i))
+	}
+	return result
 }
 
 //func ToggleInstruction(ptr int, instructions []*ABInstr) {
